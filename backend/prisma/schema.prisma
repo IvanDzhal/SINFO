@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  inactive
+}
+
+enum Scope {
+  GLOBAL
+  REGION
+  STORE
+  SELF
+}
+
+model User {
+  id                  String     @id @default(uuid())
+  login               String     @unique
+  passwordHash        String
+  firstName           String
+  lastName            String
+  status              UserStatus @default(active)
+  position            String?
+  employmentStartDate DateTime?
+  regionId            String?
+  cityId              String?
+  storeId             String?
+  region              Region?    @relation(fields: [regionId], references: [id])
+  city                City?      @relation(fields: [cityId], references: [id])
+  store               Store?     @relation(fields: [storeId], references: [id])
+  roles               UserRole[]
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  lastLoginAt         DateTime?
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  isSystem    Boolean          @default(false)
+  archivedAt  DateTime?
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique // напр. "knowledge.view"
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  permissionId String
+  scope        Scope
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId, scope])
+}
+
+model UserRole {
+  id     String @id @default(uuid())
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+model Region {
+  id     String  @id @default(uuid())
+  name   String
+  status String  @default("active")
+  cities City[]
+  stores Store[]
+  users  User[]
+}
+
+model City {
+  id       String  @id @default(uuid())
+  name     String
+  regionId String
+  region   Region  @relation(fields: [regionId], references: [id])
+  stores   Store[]
+  users    User[]
+}
+
+model BrandFormat {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  status String  @default("active")
+  stores Store[]
+}
+
+model Store {
+  id            String      @id @default(uuid())
+  name          String
+  regionId      String
+  cityId        String
+  address       String?
+  status        String      @default("active")
+  brandFormatId String
+  region        Region      @relation(fields: [regionId], references: [id])
+  city          City        @relation(fields: [cityId], references: [id])
+  brandFormat   BrandFormat @relation(fields: [brandFormatId], references: [id])
+  users         User[]
+}
