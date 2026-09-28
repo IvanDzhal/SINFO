@@ -10,7 +10,14 @@ const permissionCodes = [
   'analytics.sales.view_employee', 'analytics.sales.export',
   'analytics.content.view', 'analytics.content.view_region', 'analytics.content.view_store',
   'analytics.content.view_employee', 'analytics.content.export',
-  'analytics.online_status.view',
+  'analytics.online_status.view',  'admin.access', 'admin.audit.view',
+  'core.users.view', 'core.users.create', 'core.users.edit', 'core.users.deactivate',
+  'core.users.reset_password', 'core.users.change_login', 'core.users.manage_roles',
+  'core.roles.view', 'core.roles.create', 'core.roles.edit', 'core.roles.archive',
+  'core.regions.view', 'core.regions.create', 'core.regions.edit',
+  'core.cities.view', 'core.cities.create', 'core.cities.edit',
+  'core.stores.view', 'core.stores.create', 'core.stores.edit',
+  'core.brands.view', 'core.brands.create', 'core.brands.edit',
 ];
 
 const roleNames = ['Гість', 'Стажер', 'Продавець', 'Регіональний менеджер', 'CEO', 'Адмін'];

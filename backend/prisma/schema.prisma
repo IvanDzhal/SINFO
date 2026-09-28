@@ -38,6 +38,8 @@ model User {
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
   lastLoginAt         DateTime?
+  managedRegions      UserRegion[]
+  auditLogs           AuditLog[]
 }
 
 model Role {
@@ -79,11 +81,12 @@ model UserRole {
 
 model Region {
   id     String  @id @default(uuid())
-  name   String
+  name   String @unique
   status String  @default("active")
   cities City[]
   stores Store[]
   users  User[]
+  managers UserRegion[]
 }
 
 model City {
@@ -93,6 +96,7 @@ model City {
   region   Region  @relation(fields: [regionId], references: [id])
   stores   Store[]
   users    User[]
+  status String @default("active")
 }
 
 model BrandFormat {
@@ -114,4 +118,29 @@ model Store {
   city          City        @relation(fields: [cityId], references: [id])
   brandFormat   BrandFormat @relation(fields: [brandFormatId], references: [id])
   users         User[]
+}
+
+model UserRegion {
+  id       String @id @default(uuid())
+  userId   String
+  regionId String
+  user     User   @relation(fields: [userId], references: [id])
+  region   Region @relation(fields: [regionId], references: [id])
+
+  @@unique([userId, regionId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id])
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([action])
 }
