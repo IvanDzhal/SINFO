@@ -38,7 +38,7 @@ services:
     container_name: sinfo_db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_USER: sinfo
       POSTGRES_PASSWORD: sinfo_password
