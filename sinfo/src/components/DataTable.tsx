@@ -23,15 +23,15 @@ export default function DataTable<T extends { id: string }>({
   return (
     <div>
       <h2 className="mb-4 text-xl font-semibold">{title}</h2>
-      {loading && <p>Завантаження...</p>}
-      {error && <p className="text-red-600">{error}</p>}
+      {loading && <p className="text-muted">Завантаження...</p>}
+      {error && <p className="text-danger">{error}</p>}
       {!loading && !error && (
-        <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-neutral-50 text-left text-neutral-500">
+        <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+          <table className="w-full min-w-160 text-sm">
+            <thead className="bg-surface-2 text-left text-muted">
               <tr>
                 {columns.map((c) => (
-                  <th key={c.header} className="px-4 py-2 font-medium">
+                  <th key={c.header} className="px-4 py-2.5 font-medium">
                     {c.header}
                   </th>
                 ))}
@@ -39,9 +39,9 @@ export default function DataTable<T extends { id: string }>({
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id} className="border-t border-neutral-100">
+                <tr key={row.id} className="border-t border-border">
                   {columns.map((c) => (
-                    <td key={c.header} className="px-4 py-2">
+                    <td key={c.header} className="px-4 py-2.5">
                       {c.render(row)}
                     </td>
                   ))}
@@ -49,7 +49,7 @@ export default function DataTable<T extends { id: string }>({
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length} className="px-4 py-6 text-center text-neutral-400">
+                  <td colSpan={columns.length} className="px-4 py-6 text-center text-muted">
                     Поки нічого немає
                   </td>
                 </tr>
@@ -64,8 +64,12 @@ export default function DataTable<T extends { id: string }>({
 
 export function StatusBadge({ status }: { status: string }) {
   return status === 'active' ? (
-    <span className="text-green-600">🟢 Активний</span>
+    <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-medium text-success">
+      Активний
+    </span>
   ) : (
-    <span className="text-neutral-400">⚪ Неактивний</span>
+    <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-muted">
+      Неактивний
+    </span>
   )
 }

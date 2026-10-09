@@ -30,17 +30,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50">
+    <div className="flex min-h-screen items-center justify-center bg-bg">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-xl border border-neutral-200 bg-white p-8 shadow-sm"
+        className="w-full max-w-sm rounded-xl border border-border bg-surface p-8 shadow-sm"
       >
         <h1 className="mb-1 text-xl font-semibold">SINFO 2.0</h1>
-        <p className="mb-6 text-sm text-neutral-500">Увійдіть у свій акаунт</p>
+        <p className="mb-6 text-sm text-muted">Увійдіть у свій акаунт</p>
 
         <label className="mb-1 block text-sm font-medium">Логін</label>
         <input
-          className="mb-4 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-[#FF6B00]"
+          className="mb-4 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-accent"
           value={login}
           onChange={(e) => setLogin(e.target.value)}
           autoFocus
@@ -49,17 +49,17 @@ export default function LoginPage() {
         <label className="mb-1 block text-sm font-medium">Пароль</label>
         <input
           type="password"
-          className="mb-4 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-[#FF6B00]"
+          className="mb-4 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-accent"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {error && <p className="mb-4 text-sm text-danger">{error}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-[#FF6B00] py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="w-full rounded-lg bg-accent py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {loading ? 'Вхід...' : 'Увійти'}
         </button>

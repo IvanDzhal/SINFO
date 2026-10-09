@@ -1,49 +1,85 @@
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { useAuthStore } from '@/store/useAuthStore'
+import {
+  Building2,
+  LayoutDashboard,
+  MapPin,
+  Menu,
+  Moon,
+  ScrollText,
+  ShieldCheck,
+  Store,
+  Sun,
+  Users,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
 import clsx from 'clsx'
+import { useAuthStore } from '@/store/useAuthStore'
+import { useThemeStore } from '@/store/useThemeStore'
 
-type NavItem = { to: string; label: string; end?: boolean }
+type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 type NavGroup = { group: string; items: NavItem[] }
 
 const nav: NavGroup[] = [
   {
     group: 'Загальне',
-    items: [{ to: '/admin', label: 'Головна', end: true }],
+    items: [{ to: '/admin', label: 'Головна', icon: LayoutDashboard, end: true }],
   },
   {
     group: 'Організація',
     items: [
-      { to: '/admin/regions', label: 'Області' },
-      { to: '/admin/cities', label: 'Міста' },
-      { to: '/admin/stores', label: 'Магазини' },
+      { to: '/admin/regions', label: 'Області', icon: MapPin },
+      { to: '/admin/cities', label: 'Міста', icon: Building2 },
+      { to: '/admin/stores', label: 'Магазини', icon: Store },
     ],
   },
   {
     group: 'Доступ',
     items: [
-      { to: '/admin/users', label: 'Користувачі' },
-      { to: '/admin/roles', label: 'Ролі' },
+      { to: '/admin/users', label: 'Користувачі', icon: Users },
+      { to: '/admin/roles', label: 'Ролі', icon: ShieldCheck },
     ],
   },
   {
     group: 'Система',
-    items: [{ to: '/admin/audit-log', label: 'Журнал дій' }],
+    items: [{ to: '/admin/audit-log', label: 'Журнал дій', icon: ScrollText }],
   },
 ]
 
 export default function AdminLayout() {
   const { user, logout } = useAuthStore()
+  const { theme, toggle } = useThemeStore()
+  const [open, setOpen] = useState(false)
+  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`
 
   return (
-    <div className="flex min-h-screen bg-neutral-50">
-      <aside className="w-64 shrink-0 border-r border-neutral-200 bg-white">
-        <div className="border-b border-neutral-200 px-5 py-4">
-          <span className="text-base font-semibold">Слухавка Info</span>
+    <div className="min-h-screen bg-bg text-ink">
+      {open && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      <aside
+        className={clsx(
+          'fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto border-r border-border bg-surface transition-transform lg:translate-x-0',
+          open ? 'translate-x-0' : '-translate-x-full',
+        )}
+      >
+        <div className="flex items-center justify-between px-5 py-4">
+          <span className="text-base font-semibold">
+            <span className="text-accent">Слухавка</span> Info
+          </span>
+          <button className="lg:hidden" onClick={() => setOpen(false)} aria-label="Закрити меню">
+            <X size={20} />
+          </button>
         </div>
-        <nav className="p-3">
+        <nav className="px-3 pb-3">
           {nav.map((group) => (
             <div key={group.group} className="mb-4">
-              <p className="mb-1 px-2 text-xs font-medium uppercase text-neutral-400">
+              <p className="mb-1 px-3 text-xs font-medium uppercase text-muted">
                 {group.group}
               </p>
               {group.items.map((item) => (
@@ -51,15 +87,17 @@ export default function AdminLayout() {
                   key={item.to}
                   to={item.to}
                   end={item.end}
+                  onClick={() => setOpen(false)}
                   className={({ isActive }) =>
                     clsx(
-                      'block rounded-lg px-2 py-1.5 text-sm',
+                      'flex items-center gap-3 rounded-xl px-3 py-2 text-sm',
                       isActive
-                        ? 'bg-[#FF6B00]/10 font-medium text-[#FF6B00]'
-                        : 'text-neutral-700 hover:bg-neutral-100',
+                        ? 'bg-accent-soft font-medium text-accent'
+                        : 'text-ink hover:bg-surface-2',
                     )
                   }
                 >
+                  <item.icon size={18} />
                   {item.label}
                 </NavLink>
               ))}
@@ -68,17 +106,34 @@ export default function AdminLayout() {
         </nav>
       </aside>
 
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-3">
-          <div />
-          <div className="flex items-center gap-3 text-sm">
-            <span>{user?.firstName} {user?.lastName}</span>
-            <button onClick={logout} className="text-neutral-500 hover:text-neutral-900">
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-bg px-4 py-3 lg:px-6">
+          <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Відкрити меню">
+            <Menu size={22} />
+          </button>
+          <div className="hidden lg:block" />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggle}
+              aria-label="Змінити тему"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface"
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <div className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pl-1 pr-3 text-sm">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-soft text-xs font-medium text-accent">
+                {initials}
+              </span>
+              <span className="hidden sm:inline">
+                {user?.firstName} {user?.lastName}
+              </span>
+            </div>
+            <button onClick={logout} className="text-sm text-muted hover:text-ink">
               Вийти
             </button>
           </div>
         </header>
-        <main className="flex-1 p-6">
+        <main className="p-4 lg:p-6">
           <Outlet />
         </main>
       </div>
