@@ -1,14 +1,22 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import MainLayout from '@/layouts/MainLayout'
-import HomePage from '@/pages/HomePage'
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import AdminLayout from '@/layouts/AdminLayout'
+import LoginPage from '@/pages/LoginPage'
+import DashboardPage from '@/pages/admin/DashboardPage'
+import UsersPage from '@/pages/admin/UsersPage'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="users" element={<UsersPage />} />
+          </Route>
         </Route>
+        <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </BrowserRouter>
   )
