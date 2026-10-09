@@ -40,7 +40,7 @@ Thumbs.db
 *.swp
 
 # Docker
-docker-compose.override.yml
+docker-compose.yml
 
 # Prisma skills (якщо не хочеш їх у репо — обери)
 .claude/
