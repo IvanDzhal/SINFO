@@ -167,4 +167,22 @@ export class UsersService {
     });
     return this.get(id);
   }
+
+  async remove(actorId: string, id: string) {
+    if (id === actorId) throw new BadRequestException('Не можна видалити себе');
+    const user = await this.get(id);
+    const actions = await this.prisma.auditLog.count({ where: { actorId: id } });
+    if (user.lastLoginAt || actions > 0) {
+      throw new BadRequestException(
+        'У користувача є історія (входи або дії в системі). Видалення зламає журнал, тому скористайтесь «Деактивувати»',
+      );
+    }
+  await this.prisma.$transaction([
+    this.prisma.userRole.deleteMany({ where: { userId: id } }),
+    this.prisma.userRegion.deleteMany({ where: { userId: id } }),
+    this.prisma.user.delete({ where: { id } }),
+  ]);
+  await this.audit.log(actorId, 'user.deleted', 'User', id, { login: user.login });
+  return { ok: true };
+  }
 }

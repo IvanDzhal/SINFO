@@ -29,7 +29,7 @@ export default function UsersPage() {
   const [creating, setCreating] = useState(false)
   const [search, setSearch] = useState('')
   const [debounced, setDebounced] = useState('')
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState('active')
   const [roleId, setRoleId] = useState('')
   const [regionId, setRegionId] = useState('')
 
@@ -40,7 +40,7 @@ export default function UsersPage() {
 
   const params = new URLSearchParams()
   if (debounced) params.set('search', debounced)
-  if (status) params.set('status', status)
+  if (status && status !== 'all') params.set('status', status)
   if (roleId) params.set('roleId', roleId)
   if (regionId) params.set('regionId', regionId)
   const query = params.toString()
@@ -51,11 +51,11 @@ export default function UsersPage() {
   const roles = useFetch<Item>('/core/roles').data
   const regions = useFetch<Item>('/core/regions').data
 
-  const hasFilters = !!(search || status || roleId || regionId)
+  const hasFilters = !!(search || status !== 'active' || roleId || regionId)
 
   function reset() {
     setSearch('')
-    setStatus('')
+    setStatus('active')
     setRoleId('')
     setRegionId('')
   }
@@ -85,9 +85,9 @@ export default function UsersPage() {
               />
             </div>
             <select className={filterClass} value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="">Усі статуси</option>
-              <option value="active">Активні</option>
-              <option value="inactive">Неактивні</option>
+                <option value="active">Активні</option>
+                <option value="inactive">Неактивні</option>
+                <option value="all">Усі</option>
             </select>
             <select className={filterClass} value={roleId} onChange={(e) => setRoleId(e.target.value)}>
               <option value="">Усі ролі</option>

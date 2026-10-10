@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { api } from '@/services/api'
 import Button from '@/components/Button'
@@ -76,6 +76,7 @@ function Pills({
 export default function UserEditPage() {
   const { id } = useParams()
   const can = useCan()
+  const navigate = useNavigate()
 
   const [user, setUser] = useState<UserDetail | null>(null)
   const [loadError, setLoadError] = useState('')
@@ -204,6 +205,17 @@ export default function UserEditPage() {
       () => api.patch(`/core/users/${id}/${deactivate ? 'deactivate' : 'activate'}`),
       deactivate ? 'Користувача деактивовано' : 'Користувача активовано',
     )
+  }
+
+  const removeUser = async () => {
+    if (!window.confirm('Видалити користувача назавжди? Це не можна скасувати.')) return
+    try {
+      await api.delete(`/core/users/${id}`)
+      navigate('/admin/users')
+    } catch (err) {
+      setNotice({ ok: false, text: getErrorMessage(err, 'Не вдалося видалити') })
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   const changeLogin = async () => {
@@ -382,6 +394,18 @@ export default function UserEditPage() {
             />
             <Button variant="ghost" onClick={resetPassword}>
               Змінити пароль
+            </Button>
+          </div>
+        )}
+
+        {can('core.users.delete') && (
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+            <p className="max-w-md text-sm text-muted">
+              Видалення можливе лише для акаунтів без історії (наприклад, створених помилково).
+              Для звільнених скористайтесь «Деактивувати».
+            </p>
+            <Button variant="ghost" onClick={removeUser}>
+              <span className="text-danger">Видалити назавжди</span>
             </Button>
           </div>
         )}

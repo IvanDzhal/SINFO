@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard as AccessGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
@@ -81,5 +81,11 @@ export class UsersController {
   @Patch(':id/managed-regions')
   setManagedRegions(@Req() req: any, @Param('id') id: string, @Body() dto: SetManagedRegionsDto) {
     return this.service.setManagedRegions(req.user.id, id, dto);
+  }
+
+  @Permissions('core.users.delete')
+  @Delete(':id')
+  remove(@Req() req: any, @Param('id') id: string) {
+    return this.service.remove(req.user.id, id);
   }
 }
