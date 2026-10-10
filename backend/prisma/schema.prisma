@@ -41,6 +41,8 @@ model User {
   managedRegions      UserRegion[]
   auditLogs           AuditLog[]
   presence       UserPresence?
+  knowledgeItems KnowledgeItem[]
+  knowledgeReads KnowledgeRead[]
 }
 
 model Role {
@@ -162,4 +164,70 @@ model KnowledgeCategory {
   sortOrder  Int                 @default(0)
   archivedAt DateTime?
   createdAt  DateTime            @default(now())
+  items KnowledgeItem[]
+}
+
+enum KnowledgeType {
+  instruction
+  material
+  news
+}
+
+enum KnowledgeStatus {
+  draft
+  published
+  archived
+}
+
+enum VisibilityKind {
+  GLOBAL
+  REGION
+  STORE
+  ROLE
+}
+
+model KnowledgeItem {
+  id                 String              @id @default(uuid())
+  type               KnowledgeType
+  title              String
+  description        String              @default("")
+  content            Json?
+  contentText        String              @default("")
+  categoryId         String?
+  category           KnowledgeCategory?  @relation(fields: [categoryId], references: [id])
+  authorId           String
+  author             User                @relation(fields: [authorId], references: [id])
+  status             KnowledgeStatus     @default(draft)
+  version            Int                 @default(1)
+  isRequired         Boolean             @default(false)
+  readingTimeMinutes Int                 @default(1)
+  viewsCount         Int                 @default(0)
+  publishedAt        DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  visibility         KnowledgeVisibility[]
+  reads              KnowledgeRead[]
+
+  @@index([type, status])
+}
+
+model KnowledgeVisibility {
+  id       String         @id @default(uuid())
+  itemId   String
+  kind     VisibilityKind
+  targetId String?
+  item     KnowledgeItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+model KnowledgeRead {
+  id       String        @id @default(uuid())
+  userId   String
+  itemId   String
+  readAt   DateTime      @default(now())
+  storeId  String?
+  regionId String?
+  user     User          @relation(fields: [userId], references: [id])
+  item     KnowledgeItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
 }

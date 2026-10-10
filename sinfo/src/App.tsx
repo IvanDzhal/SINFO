@@ -16,11 +16,10 @@ import RolesPage from '@/pages/admin/RolesPage'
 import RoleEditPage from '@/pages/admin/RoleEditPage'
 import AuditLogPage from '@/pages/admin/AuditLogPage'
 import CategoriesPage from '@/pages/admin/CategoriesPage'
+import KnowledgeListPage from '@/pages/KnowledgeListPage'
 
 const stubs = [
   { path: 'about', title: 'Про компанію' },
-  { path: 'instructions', title: 'Інструкції' },
-  { path: 'materials', title: 'Робочі матеріали' },
   { path: 'training', title: 'Навчання' },
   { path: 'testing', title: 'Тестування' },
   { path: 'analytics', title: 'Аналітика' },
@@ -36,6 +35,9 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<UserLayout />}>
             <Route path="/" element={<HomePage />} />
+            <Route path="instructions" element={<KnowledgeListPage key="instruction" type="instruction" />} />
+            <Route path="materials" element={<KnowledgeListPage key="material" type="material" />} />
+            <Route path="knowledge/:id" element={<PlaceholderPage title="Стаття" />} />
             {stubs.map((s) => (
               <Route key={s.path} path={s.path} element={<PlaceholderPage title={s.title} />} />
             ))}

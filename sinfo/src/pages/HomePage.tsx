@@ -7,12 +7,14 @@ import {
   ClipboardCheck,
   GraduationCap,
   UserRound,
+  Megaphone,
   type LucideIcon,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useCan } from '@/hooks/useCan'
+import { useFetch } from '@/hooks/useFetch'
 
 interface HomeCard {
   to: string
@@ -81,6 +83,73 @@ function Card({ to, title, text, icon: Icon, soon }: HomeCard) {
     </div>
   )
 }
+
+  interface Latest {
+    id: string
+    type: 'instruction' | 'material' | 'news'
+    title: string
+    isRequired: boolean
+    publishedAt: string | null
+    author: { firstName: string; lastName: string }
+  }
+
+  const TYPE_LABEL: Record<Latest['type'], string> = {
+    instruction: 'Інструкція',
+    material: 'Матеріал',
+    news: 'Новина',
+  }
+
+  const TYPE_ICON: Record<Latest['type'], LucideIcon> = {
+    instruction: BookOpen,
+    material: Briefcase,
+    news: Megaphone,
+  }
+
+  function LatestFeed() {
+    const can = useCan()
+    const { data, loading } = useFetch<Latest>('/knowledge/items/latest?limit=6')
+    if (!can('knowledge.view')) return null
+
+    return (
+      <div className="rounded-2xl border border-border bg-surface">
+        <div className="px-4 py-3">
+          <h3 className="font-medium">Останні оновлення</h3>
+        </div>
+        {!loading && data.length === 0 && (
+          <p className="border-t border-border px-4 py-8 text-center text-sm text-muted">
+            Поки нових матеріалів немає.
+          </p>
+        )}
+        {data.map((i) => {
+          const Icon = TYPE_ICON[i.type]
+          return (
+            <Link
+              key={i.id}
+              to={`/knowledge/${i.id}`}
+              className="flex items-center gap-3 border-t border-border px-4 py-3 hover:bg-surface-2"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                <Icon size={18} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{i.title}</p>
+                <p className="text-xs text-muted">
+                  {TYPE_LABEL[i.type]}
+                  {i.publishedAt && ` · ${new Date(i.publishedAt).toLocaleDateString('uk-UA')}`}
+                  {` · ${i.author.firstName} ${i.author.lastName}`}
+                </p>
+              </div>
+              {i.isRequired && (
+                <span className="shrink-0 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">
+                  Обов'язково
+                </span>
+              )}
+            </Link>
+          )
+        })}
+      </div>
+    )
+  }
 
 interface OnlineUser {
   id: string
@@ -161,14 +230,7 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface">
-          <div className="px-4 py-3">
-            <h3 className="font-medium">Останні оновлення</h3>
-          </div>
-          <p className="border-t border-border px-4 py-8 text-center text-sm text-muted">
-            Тут з'являтимуться нові інструкції, матеріали та новини.
-          </p>
-        </div>
+        <LatestFeed />
       </div>
 
       {showOnline && <OnlineCard />}
