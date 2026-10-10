@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import {
   Building2,
   LayoutDashboard,
@@ -19,6 +19,7 @@ import clsx from 'clsx'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useThemeStore } from '@/store/useThemeStore'
 import { useCan } from '@/hooks/useCan'
+import { useHeartbeat } from '@/hooks/useHeartbeat'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 type NavGroup = { group: string; items: NavItem[] }
@@ -65,6 +66,7 @@ const PERM: Record<string, string> = {
 
 export default function AdminLayout() {
   const { user, logout } = useAuthStore()
+  useHeartbeat()
   const { theme, toggle } = useThemeStore()
   const [open, setOpen] = useState(false)
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`
@@ -132,7 +134,7 @@ const can = useCan()
           <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Відкрити меню">
             <Menu size={22} />
           </button>
-          <div className="hidden lg:block" />
+          <Link to="/" className="hidden text-sm text-muted hover:text-ink lg:block">← До порталу</Link>
           <div className="flex items-center gap-3">
             <button
               onClick={toggle}

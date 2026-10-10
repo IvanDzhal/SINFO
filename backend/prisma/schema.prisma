@@ -40,6 +40,7 @@ model User {
   lastLoginAt         DateTime?
   managedRegions      UserRegion[]
   auditLogs           AuditLog[]
+  presence       UserPresence?
 }
 
 model Role {
@@ -143,4 +144,10 @@ model AuditLog {
   @@index([createdAt])
   @@index([actorId])
   @@index([action])
+}
+
+model UserPresence {
+  userId         String   @id
+  lastActivityAt DateTime
+  user           User     @relation(fields: [userId], references: [id])
 }

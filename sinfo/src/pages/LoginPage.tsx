@@ -21,7 +21,7 @@ export default function LoginPage() {
         headers: { Authorization: `Bearer ${data.accessToken}` },
       })
       setSession(me.data, data.accessToken, data.refreshToken)
-      navigate(me.data.permissions.includes('admin.access') ? '/admin' : '/')
+      navigate('/')
     } catch {
       setError('Невірний логін або пароль')
     } finally {
