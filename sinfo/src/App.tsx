@@ -15,6 +15,7 @@ import BrandsPage from '@/pages/admin/BrandsPage'
 import RolesPage from '@/pages/admin/RolesPage'
 import RoleEditPage from '@/pages/admin/RoleEditPage'
 import AuditLogPage from '@/pages/admin/AuditLogPage'
+import CategoriesPage from '@/pages/admin/CategoriesPage'
 
 const stubs = [
   { path: 'about', title: 'Про компанію' },
@@ -52,6 +53,7 @@ function App() {
               <Route path="roles" element={<RolesPage />} />
               <Route path="roles/:id" element={<RoleEditPage />} />
               <Route path="audit-log" element={<AuditLogPage />} />
+              <Route path="knowledge/categories" element={<CategoriesPage />} />
             </Route>
           </Route>
         </Route>

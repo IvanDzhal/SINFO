@@ -62,6 +62,12 @@ const ACTION_LABEL: Record<string, string> = {
   change_login: 'Зміна логіну',
   manage_roles: 'Керування ролями',
   archive: 'Архівація',
+  manage_categories: 'Керування категоріями',
+  manage_files: 'Керування файлами',
+  view_versions: 'Перегляд версій',
+  view_read_status: 'Статус прочитання',
+  manage_visibility: 'Керування видимістю',
+  create_embed: 'HTML-вставки',
 }
 
 const selectClass =

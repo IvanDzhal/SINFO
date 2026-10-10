@@ -21,6 +21,10 @@ const LABELS: Record<string, string> = {
   'user.login_changed': 'Змінено логін користувача',
   'user.roles_updated': 'Змінено ролі користувача',
   'user.managed_regions_updated': 'Змінено області менеджера',
+  'knowledge_category.created': 'Створено категорію бази знань',
+  'knowledge_category.updated': 'Змінено категорію бази знань',
+  'knowledge_category.archived': 'Архівовано категорію бази знань',
+  'knowledge_category.restored': 'Відновлено категорію бази знань',
 }
 
 export function actionLabel(code: string) {

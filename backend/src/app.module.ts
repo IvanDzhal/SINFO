@@ -13,9 +13,10 @@ import { RolesModule } from './core/roles/roles.module';
 import { UsersModule } from './core/users/users.module';
 import { DashboardModule } from './admin/dashboard.module';
 import { PresenceModule } from './presence/presence.module';
+import { CategoriesModule } from './knowledge/categories/categories.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AuditModule, RegionsModule, CitiesModule, BrandsModule, StoresModule, PermissionsModule, RolesModule, UsersModule, DashboardModule, PresenceModule],
+  imports: [PrismaModule, AuthModule, AuditModule, RegionsModule, CitiesModule, BrandsModule, StoresModule, PermissionsModule, RolesModule, UsersModule, DashboardModule, PresenceModule, CategoriesModule],
   controllers: [AppController],
   providers: [AppService],
 })

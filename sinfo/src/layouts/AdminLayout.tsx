@@ -13,6 +13,7 @@ import {
   Sun,
   Users,
   X,
+  FolderTree,
   type LucideIcon,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -46,6 +47,10 @@ const nav: NavGroup[] = [
     ],
   },
   {
+    group: 'База знань',
+    items: [{ to: '/admin/knowledge/categories', label: 'Категорії', icon: FolderTree }],
+  },
+  {
     group: 'Система',
     items: [{ to: '/admin/audit-log', label: 'Журнал дій', icon: ScrollText }],
   },
@@ -62,6 +67,7 @@ const PERM: Record<string, string> = {
   '/admin/users': 'core.users.view',
   '/admin/roles': 'core.roles.view',
   '/admin/audit-log': 'admin.audit.view',
+  '/admin/knowledge/categories': 'knowledge.manage_categories',
 }
 
 export default function AdminLayout() {

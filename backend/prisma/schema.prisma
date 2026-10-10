@@ -151,3 +151,15 @@ model UserPresence {
   lastActivityAt DateTime
   user           User     @relation(fields: [userId], references: [id])
 }
+
+model KnowledgeCategory {
+  id         String              @id @default(uuid())
+  name       String
+  icon       String?
+  parentId   String?
+  parent     KnowledgeCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children   KnowledgeCategory[] @relation("CategoryTree")
+  sortOrder  Int                 @default(0)
+  archivedAt DateTime?
+  createdAt  DateTime            @default(now())
+}
