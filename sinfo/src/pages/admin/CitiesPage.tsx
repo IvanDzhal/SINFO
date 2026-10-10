@@ -4,10 +4,12 @@ import DataTable, { StatusBadge } from '@/components/DataTable'
 import Button from '@/components/Button'
 import CreateModal from '@/components/CreateModal'
 import { useFetch } from '@/hooks/useFetch'
+import EditButton from '@/components/EditButton'
 
 interface City {
   id: string
   name: string
+  regionId: string
   status: string
   region: { name: string }
   _count: { stores: number }
@@ -35,6 +37,28 @@ export default function CitiesPage() {
           { header: 'Область', render: (r) => r.region.name },
           { header: 'Магазинів', render: (r) => r._count.stores },
           { header: 'Статус', render: (r) => <StatusBadge status={r.status} /> },
+          {
+            header: 'Дії',
+            render: (r) => (
+              <EditButton
+                title="Редагувати місто"
+                endpoint={`/core/cities/${r.id}`}
+                perm="core.cities.edit"
+                fields={[
+                  { name: 'name', label: 'Назва', required: true },
+                  {
+                    name: 'regionId',
+                    label: 'Область',
+                    kind: 'select',
+                    required: true,
+                    optionsUrl: '/core/regions',
+                  },
+                ]}
+                initial={{ name: r.name, regionId: r.regionId, status: r.status }}
+                onSaved={reload}
+              />
+            ),
+          },
         ]}
       />
       {creating && (
