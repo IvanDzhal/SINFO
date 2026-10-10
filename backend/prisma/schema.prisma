@@ -185,6 +185,7 @@ enum VisibilityKind {
   REGION
   STORE
   ROLE
+  BRAND
 }
 
 model KnowledgeItem {

@@ -84,7 +84,13 @@ export class ManageService {
       orderBy: { name: 'asc' },
     });
 
-    return { global, regions, stores, roles };
+    const brands = await this.prisma.brandFormat.findMany({
+      where: { status: 'active' },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+
+    return { global, regions, stores, roles, brands };
   }
 
   async getForEdit(user: Actor, id: string) {
@@ -292,10 +298,13 @@ export class ManageService {
           })
         : [];
 
+      // обмежений автор мусить вказати область або магазин зі свого доступу,
+      // а бренд і ролі можуть лише звужувати коло
+      const hasPlace = rules.some((r) => r.kind === 'REGION' || r.kind === 'STORE');
       const ok =
-        rules.length > 0 &&
+        hasPlace &&
         rules.every((r) => {
-          if (r.kind === 'ROLE') return true;
+          if (r.kind === 'ROLE' || r.kind === 'BRAND') return true;
           if (r.kind === 'REGION') return regions.includes(r.targetId as string);
           if (r.kind === 'STORE') {
             const s = stores.find((x) => x.id === r.targetId);

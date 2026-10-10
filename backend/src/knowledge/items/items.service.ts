@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { KnowledgeType, Prisma } from '@prisma/client';
+import { KnowledgeType, Prisma, VisibilityKind } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { authorWhere, canManageItem, scopesFor } from '../helpers';
 
@@ -15,7 +15,6 @@ type Viewer = {
 export class ItemsService {
   constructor(private prisma: PrismaService) {}
 
-  // Умова видимості: що саме цей користувач має право бачити
   private async visibleWhere(user: Viewer): Promise<Prisma.KnowledgeItemWhereInput> {
     const roles = await this.prisma.userRole.findMany({
       where: { userId: user.id, role: { archivedAt: null } },
@@ -25,21 +24,48 @@ export class ItemsService {
     const regionIds = [user.regionId, ...(user.managedRegionIds ?? [])].filter(
       (x): x is string => !!x,
     );
+    const store = user.storeId
+      ? await this.prisma.store.findUnique({
+          where: { id: user.storeId },
+          select: { brandFormatId: true },
+        })
+      : null;
 
-    const or: Prisma.KnowledgeItemWhereInput[] = [
-      { visibility: { none: {} } },
-      { visibility: { some: { kind: 'GLOBAL' } } },
-    ];
-    if (regionIds.length) {
-      or.push({ visibility: { some: { kind: 'REGION', targetId: { in: regionIds } } } });
-    }
-    if (user.storeId) {
-      or.push({ visibility: { some: { kind: 'STORE', targetId: user.storeId } } });
-    }
-    if (roleIds.length) {
-      or.push({ visibility: { some: { kind: 'ROLE', targetId: { in: roleIds } } } });
-    }
-    return { status: 'published', OR: or };
+    // Групи правил поєднуються через «і», всередині групи достатньо одного збігу
+    const groupOk = (
+      kinds: VisibilityKind[],
+      matches: Prisma.KnowledgeVisibilityWhereInput[],
+    ): Prisma.KnowledgeItemWhereInput => ({
+      OR: [
+        { visibility: { none: { kind: { in: kinds } } } },
+        ...(matches.length ? [{ visibility: { some: { OR: matches } } }] : []),
+      ],
+    });
+
+    const place: Prisma.KnowledgeVisibilityWhereInput[] = [];
+    if (regionIds.length) place.push({ kind: 'REGION', targetId: { in: regionIds } });
+    if (user.storeId) place.push({ kind: 'STORE', targetId: user.storeId });
+    const brand: Prisma.KnowledgeVisibilityWhereInput[] = store
+      ? [{ kind: 'BRAND', targetId: store.brandFormatId }]
+      : [];
+    const role: Prisma.KnowledgeVisibilityWhereInput[] = roleIds.length
+      ? [{ kind: 'ROLE', targetId: { in: roleIds } }]
+      : [];
+
+    return {
+      status: 'published',
+      OR: [
+        { visibility: { none: {} } },
+        { visibility: { some: { kind: 'GLOBAL' } } },
+        {
+          AND: [
+            groupOk(['REGION', 'STORE'], place),
+            groupOk(['BRAND'], brand),
+            groupOk(['ROLE'], role),
+          ],
+        },
+      ],
+    };
   }
 
   async list(user: Viewer, type: KnowledgeType) {

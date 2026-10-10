@@ -12,7 +12,7 @@ import { getErrorMessage } from '@/utils/errors'
 
 type ItemType = 'instruction' | 'material' | 'news'
 type Status = 'draft' | 'published' | 'archived'
-type Kind = 'GLOBAL' | 'REGION' | 'STORE' | 'ROLE'
+type Kind = 'GLOBAL' | 'REGION' | 'STORE' | 'ROLE' | 'BRAND'
 
 interface Cat {
   id: string
@@ -32,6 +32,7 @@ interface Options {
   regions: Named[]
   stores: (Named & { regionId: string })[]
   roles: Named[]
+  brands: Named[]
 }
 interface EditItem {
   id: string
@@ -123,6 +124,7 @@ export default function KnowledgeEditPage() {
   const [regionIds, setRegionIds] = useState<string[]>([])
   const [storeIds, setStoreIds] = useState<string[]>([])
   const [roleIds, setRoleIds] = useState<string[]>([])
+  const [brandIds, setBrandIds] = useState<string[]>([])
   const [initialContent, setInitialContent] = useState<unknown>(undefined)
   const contentRef = useRef<unknown>(undefined)
   const contentDirty = useRef(false)
@@ -165,6 +167,7 @@ export default function KnowledgeEditPage() {
           setRegionIds(pick('REGION'))
           setStoreIds(pick('STORE'))
           setRoleIds(pick('ROLE'))
+          setBrandIds(pick('BRAND'))
         }),
       )
     }
@@ -183,6 +186,7 @@ export default function KnowledgeEditPage() {
       ...regionIds.map((t) => ({ kind: 'REGION' as const, targetId: t })),
       ...storeIds.map((t) => ({ kind: 'STORE' as const, targetId: t })),
       ...roleIds.map((t) => ({ kind: 'ROLE' as const, targetId: t })),
+      ...brandIds.map((t) => ({ kind: 'BRAND' as const, targetId: t })),
     ]
   }
 
@@ -449,6 +453,24 @@ export default function KnowledgeEditPage() {
                             active={storeIds.includes(s.id)}
                             onClick={() => {
                               setStoreIds((l) => toggle(l, s.id))
+                              setDirty(true)
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {options.brands.length > 0 && (
+                    <div>
+                      <p className="mb-1 text-xs text-muted">Бренди</p>
+                      <div className="flex flex-wrap gap-2">
+                        {options.brands.map((b) => (
+                          <Pill
+                            key={b.id}
+                            label={b.name}
+                            active={brandIds.includes(b.id)}
+                            onClick={() => {
+                              setBrandIds((l) => toggle(l, b.id))
                               setDirty(true)
                             }}
                           />
