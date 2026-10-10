@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Clock, FileText } from 'lucide-react'
+import { Check, Clock, FileText, Plus } from 'lucide-react'
 import clsx from 'clsx'
 import { useFetch } from '@/hooks/useFetch'
+import { useCan } from '@/hooks/useCan'
 
 type ItemType = 'instruction' | 'material'
+type Mode = 'published' | 'draft' | 'archived'
 
 interface Category {
   id: string
@@ -20,7 +22,7 @@ interface Item {
   readingTimeMinutes: number
   isRequired: boolean
   updatedAt: string
-  isRead: boolean
+  isRead?: boolean
   category: Category | null
 }
 
@@ -35,6 +37,12 @@ const TEXT: Record<ItemType, { title: string; subtitle: string }> = {
   },
 }
 
+const MODES: { key: Mode; label: string }[] = [
+  { key: 'published', label: 'Опубліковані' },
+  { key: 'draft', label: 'Чернетки' },
+  { key: 'archived', label: 'Архів' },
+]
+
 const rootId = (i: Item) => (i.category ? (i.category.parentId ?? i.category.id) : null)
 
 function plural(n: number) {
@@ -46,10 +54,21 @@ function plural(n: number) {
 }
 
 export default function KnowledgeListPage({ type }: { type: ItemType }) {
-  const items = useFetch<Item>(`/knowledge/items?type=${type}`)
+  const can = useCan()
+  const [mode, setMode] = useState<Mode>('published')
+  const url =
+    mode === 'published'
+      ? `/knowledge/items?type=${type}`
+      : `/knowledge/manage/items?type=${type}&status=${mode}`
+  const items = useFetch<Item>(url)
   const cats = useFetch<Category>('/knowledge/categories')
   const [filter, setFilter] = useState('all')
   const [sort, setSort] = useState('new')
+
+  function changeMode(next: Mode) {
+    setMode(next)
+    setFilter('all')
+  }
 
   const roots = useMemo(() => {
     const counts = new Map<string, number>()
@@ -75,14 +94,43 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
 
   const chips = [
     { key: 'all', label: 'Усі' },
-    { key: 'unread', label: 'Непрочитані' },
+    ...(mode === 'published' ? [{ key: 'unread', label: 'Непрочитані' }] : []),
     ...roots.map((c) => ({ key: c.id, label: c.name })),
   ]
 
   return (
     <div>
-      <h2 className="text-xl font-semibold">{TEXT[type].title}</h2>
-      <p className="mb-5 text-sm text-muted">{TEXT[type].subtitle}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">{TEXT[type].title}</h2>
+          <p className="mb-5 text-sm text-muted">{TEXT[type].subtitle}</p>
+        </div>
+        {can('knowledge.create') && (
+          <Link
+            to={`/knowledge/new?type=${type}`}
+            className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+          >
+            <Plus size={16} /> Створити
+          </Link>
+        )}
+      </div>
+
+      {can('knowledge.edit') && (
+        <div className="mb-4 inline-flex rounded-xl border border-border bg-surface p-1">
+          {MODES.map((m) => (
+            <button
+              key={m.key}
+              onClick={() => changeMode(m.key)}
+              className={clsx(
+                'rounded-lg px-3 py-1 text-sm',
+                mode === m.key ? 'bg-accent-soft font-medium text-accent' : 'text-muted',
+              )}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {roots.length > 0 && (
         <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -146,50 +194,54 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
         {!items.loading && !items.error && visible.length === 0 && (
           <p className="px-4 py-6 text-center text-muted">Поки нічого немає</p>
         )}
-        {visible.map((i) => (
-          <Link
-            key={i.id}
-            to={`/knowledge/${i.id}`}
-            className="flex items-center gap-3 border-t border-border px-4 py-3 first:border-t-0 hover:bg-surface-2"
-          >
-            <span
-              className={clsx(
-                'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
-                i.isRead ? 'bg-success-soft text-success' : 'bg-surface-2 text-muted',
-              )}
+        {visible.map((i) => {
+          const isPublished = mode === 'published'
+          const read = !!i.isRead
+          return (
+            <Link
+              key={i.id}
+              to={isPublished ? `/knowledge/${i.id}` : `/knowledge/${i.id}/edit`}
+              className="flex items-center gap-3 border-t border-border px-4 py-3 first:border-t-0 hover:bg-surface-2"
             >
-              {i.isRead ? <Check size={18} /> : <FileText size={18} />}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{i.title}</p>
-              <p className="truncate text-sm text-muted">{i.description}</p>
-            </div>
-            {i.isRequired && !i.isRead && (
-              <span className="hidden shrink-0 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent sm:inline">
-                Обов'язково
+              <span
+                className={clsx(
+                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
+                  isPublished && read ? 'bg-success-soft text-success' : 'bg-surface-2 text-muted',
+                )}
+              >
+                {isPublished && read ? <Check size={18} /> : <FileText size={18} />}
               </span>
-            )}
-            {i.category && (
-              <span className="hidden shrink-0 rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted md:inline">
-                {i.category.name}
-              </span>
-            )}
-            <span className="hidden shrink-0 items-center gap-1 text-xs text-muted md:flex">
-              <Clock size={14} /> {i.readingTimeMinutes} хв
-            </span>
-            <span className="hidden shrink-0 text-xs text-muted lg:inline">
-              {new Date(i.updatedAt).toLocaleDateString('uk-UA')}
-            </span>
-            <span
-              className={clsx(
-                'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                i.isRead ? 'bg-success-soft text-success' : 'bg-surface-2 text-muted',
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{i.title}</p>
+                <p className="truncate text-sm text-muted">{i.description}</p>
+              </div>
+              {i.isRequired && !read && (
+                <span className="hidden shrink-0 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent sm:inline">
+                  Обов'язково
+                </span>
               )}
-            >
-              {i.isRead ? 'Прочитано' : 'Не прочитано'}
-            </span>
-          </Link>
-        ))}
+              {i.category && (
+                <span className="hidden shrink-0 rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted md:inline">
+                  {i.category.name}
+                </span>
+              )}
+              <span className="hidden shrink-0 items-center gap-1 text-xs text-muted md:flex">
+                <Clock size={14} /> {i.readingTimeMinutes} хв
+              </span>
+              <span className="hidden shrink-0 text-xs text-muted lg:inline">
+                {new Date(i.updatedAt).toLocaleDateString('uk-UA')}
+              </span>
+              <span
+                className={clsx(
+                  'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                  isPublished && read ? 'bg-success-soft text-success' : 'bg-surface-2 text-muted',
+                )}
+              >
+                {isPublished ? (read ? 'Прочитано' : 'Не прочитано') : mode === 'draft' ? 'Чернетка' : 'Архів'}
+              </span>
+            </Link>
+          )
+        })}
       </div>
     </div>
   )

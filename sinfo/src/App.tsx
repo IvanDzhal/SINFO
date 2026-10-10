@@ -18,6 +18,7 @@ import AuditLogPage from '@/pages/admin/AuditLogPage'
 import CategoriesPage from '@/pages/admin/CategoriesPage'
 import KnowledgeListPage from '@/pages/KnowledgeListPage'
 import KnowledgeArticlePage from '@/pages/KnowledgeArticlePage'
+import KnowledgeEditPage from '@/pages/KnowledgeEditPage'
 
 const stubs = [
   { path: 'about', title: 'Про компанію' },
@@ -39,6 +40,8 @@ function App() {
             <Route path="instructions" element={<KnowledgeListPage key="instruction" type="instruction" />} />
             <Route path="materials" element={<KnowledgeListPage key="material" type="material" />} />
             <Route path="knowledge/:id" element={<KnowledgeArticlePage />} />
+            <Route path="knowledge/new" element={<KnowledgeEditPage />} />
+            <Route path="knowledge/:id/edit" element={<KnowledgeEditPage />} />
             {stubs.map((s) => (
               <Route key={s.path} path={s.path} element={<PlaceholderPage title={s.title} />} />
             ))}

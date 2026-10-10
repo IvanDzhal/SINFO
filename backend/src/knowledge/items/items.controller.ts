@@ -58,4 +58,18 @@ export class ItemsController {
   markRead(@Req() req: any, @Param('id') id: string, @Body('token') token: string) {
     return this.service.markRead(req.user, id, token);
   }
+
+  @Permissions('knowledge.view_versions')
+  @Get(':id/versions')
+  versions(@Req() req: any, @Param('id') id: string) {
+    return this.service.versions(req.user, id);
+  }
+
+  @Permissions('knowledge.view_versions')
+  @Get(':id/versions/:version')
+  version(@Req() req: any, @Param('id') id: string, @Param('version') version: string) {
+    const n = Number(version);
+    if (!Number.isInteger(n)) throw new BadRequestException('Невірна версія');
+    return this.service.version(req.user, id, n);
+  }
 }

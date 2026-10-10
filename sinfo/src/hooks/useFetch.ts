@@ -8,6 +8,11 @@ export function useFetch<T>(url: string) {
   const [tick, setTick] = useState(0)
 
   useEffect(() => {
+    setLoading(true)
+    setData([])
+  }, [url])
+
+  useEffect(() => {
     let cancelled = false
     api
       .get(url)

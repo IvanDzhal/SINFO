@@ -43,6 +43,7 @@ model User {
   presence       UserPresence?
   knowledgeItems KnowledgeItem[]
   knowledgeReads KnowledgeRead[]
+  knowledgeVersions KnowledgeVersion[]
 }
 
 model Role {
@@ -207,6 +208,7 @@ model KnowledgeItem {
   updatedAt          DateTime            @updatedAt
   visibility         KnowledgeVisibility[]
   reads              KnowledgeRead[]
+  versions KnowledgeVersion[]
 
   @@index([type, status])
 }
@@ -230,4 +232,19 @@ model KnowledgeRead {
   item     KnowledgeItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@unique([userId, itemId])
+}
+
+model KnowledgeVersion {
+  id          String        @id @default(uuid())
+  itemId      String
+  version     Int
+  title       String
+  description String        @default("")
+  content     Json?
+  authorId    String
+  createdAt   DateTime      @default(now())
+  item        KnowledgeItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  author      User          @relation(fields: [authorId], references: [id])
+
+  @@unique([itemId, version])
 }

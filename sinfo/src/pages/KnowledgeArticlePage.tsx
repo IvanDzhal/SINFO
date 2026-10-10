@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Clock, Eye } from 'lucide-react'
+import { ArrowLeft, Clock, Eye, History, Pencil } from 'lucide-react'
 import clsx from 'clsx'
 import { api } from '@/services/api'
 import { useFetch } from '@/hooks/useFetch'
 import { useThemeStore } from '@/store/useThemeStore'
 import RichContent from '@/components/RichContent'
+import VersionsModal from '@/components/VersionsModal'
+import { useCan } from '@/hooks/useCan'
 
 type ItemType = 'instruction' | 'material' | 'news'
 
@@ -24,6 +26,7 @@ interface Article {
   category: { id: string; name: string; icon: string | null; parent: { name: string } | null } | null
   isRead: boolean
   readToken: string
+  canManage: boolean
 }
 
 interface Similar {
@@ -75,6 +78,8 @@ export default function KnowledgeArticlePage() {
   const [article, setArticle] = useState<Article | null>(null)
   const [error, setError] = useState('')
   const contentRef = useRef<HTMLDivElement>(null)
+  const can = useCan()
+  const [showVersions, setShowVersions] = useState(false)
   const similar = useFetch<Similar>(`/knowledge/items/${id}/similar`)
 
   useEffect(() => {
@@ -159,7 +164,27 @@ export default function KnowledgeArticlePage() {
             </span>
           </div>
 
-          <h1 className="text-2xl font-semibold">{article.title}</h1>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h1 className="text-2xl font-semibold">{article.title}</h1>
+            <div className="flex gap-2">
+              {article.canManage && (
+                <Link
+                  to={`/knowledge/${article.id}/edit`}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm hover:bg-surface-2"
+                >
+                  <Pencil size={14} /> Редагувати
+                </Link>
+              )}
+              {can('knowledge.view_versions') && (
+                <button
+                  onClick={() => setShowVersions(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm hover:bg-surface-2"
+                >
+                  <History size={14} /> Версії
+                </button>
+              )}
+            </div>
+          </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
             <span>
@@ -231,6 +256,13 @@ export default function KnowledgeArticlePage() {
           )}
         </aside>
       </div>
+      {showVersions && (
+        <VersionsModal
+          itemId={article.id}
+          current={article.version}
+          onClose={() => setShowVersions(false)}
+        />
+      )}
     </div>
   )
 }

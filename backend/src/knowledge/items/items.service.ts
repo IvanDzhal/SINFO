@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { createHmac, timingSafeEqual } from 'crypto';
 import { KnowledgeType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { authorWhere, canManageItem, scopesFor } from '../helpers';
 
 type Viewer = {
   id: string;
@@ -109,6 +110,7 @@ export class ItemsService {
       viewsCount: item.viewsCount + 1,
       isRead: !!read,
       readToken: `${ts}.${this.sign(user.id, id, ts)}`,
+      canManage: await canManageItem(this.prisma, user, id),
     };
   }
 
@@ -205,5 +207,63 @@ export class ItemsService {
       .sort((a, b) => score(b) - score(a))
       .slice(0, 5)
       .map(({ contentText, ...rest }) => rest);
+  }
+
+    private async accessibleWhere(
+    user: Viewer,
+    id: string,
+  ): Promise<Prisma.KnowledgeItemWhereInput> {
+    const visible = await this.visibleWhere(user);
+    const scopes = await scopesFor(this.prisma, user.id, 'knowledge.edit');
+    return { AND: [{ id }, { OR: [visible, authorWhere(scopes, user)] }] };
+  }
+
+  async versions(user: Viewer, id: string) {
+    const item = await this.prisma.knowledgeItem.findFirst({
+      where: await this.accessibleWhere(user, id),
+    });
+    if (!item) throw new NotFoundException('Матеріал не знайдено');
+
+    // старі матеріали без знімка версії: створюємо знімок поточної
+    const current = await this.prisma.knowledgeVersion.findUnique({
+      where: { itemId_version: { itemId: id, version: item.version } },
+    });
+    if (!current && item.status === 'published') {
+      await this.prisma.knowledgeVersion.create({
+        data: {
+          itemId: id,
+          version: item.version,
+          title: item.title,
+          description: item.description,
+          content: (item.content ?? undefined) as Prisma.InputJsonValue | undefined,
+          authorId: item.authorId,
+        },
+      });
+    }
+
+    return this.prisma.knowledgeVersion.findMany({
+      where: { itemId: id },
+      orderBy: { version: 'desc' },
+      select: {
+        id: true,
+        version: true,
+        createdAt: true,
+        author: { select: { firstName: true, lastName: true } },
+      },
+    });
+  }
+
+  async version(user: Viewer, id: string, version: number) {
+    const item = await this.prisma.knowledgeItem.findFirst({
+      where: await this.accessibleWhere(user, id),
+      select: { id: true },
+    });
+    if (!item) throw new NotFoundException('Матеріал не знайдено');
+    const v = await this.prisma.knowledgeVersion.findUnique({
+      where: { itemId_version: { itemId: id, version } },
+      include: { author: { select: { firstName: true, lastName: true } } },
+    });
+    if (!v) throw new NotFoundException('Версію не знайдено');
+    return v;
   }
 }

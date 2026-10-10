@@ -25,6 +25,12 @@ const LABELS: Record<string, string> = {
   'knowledge_category.updated': 'Змінено категорію бази знань',
   'knowledge_category.archived': 'Архівовано категорію бази знань',
   'knowledge_category.restored': 'Відновлено категорію бази знань',
+  'knowledge_item.created': 'Створено матеріал',
+  'knowledge_item.updated': 'Змінено матеріал',
+  'knowledge_item.published': 'Опубліковано матеріал',
+  'knowledge_item.archived': 'Архівовано матеріал',
+  'knowledge_item.restored': 'Відновлено матеріал',
+  'knowledge_item.deleted': 'Видалено чернетку',
 }
 
 export function actionLabel(code: string) {

@@ -56,6 +56,6 @@ body {
   background: transparent !important;
 }
 
-.bn-editor {
+.bn-editor[contenteditable='false'] {
   padding-inline: 0 !important;
 }
