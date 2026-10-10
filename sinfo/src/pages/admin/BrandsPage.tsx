@@ -5,22 +5,20 @@ import Button from '@/components/Button'
 import CreateModal from '@/components/CreateModal'
 import { useFetch } from '@/hooks/useFetch'
 
-interface City {
+interface Brand {
   id: string
   name: string
   status: string
-  region: { name: string }
-  _count: { stores: number }
 }
 
-export default function CitiesPage() {
-  const { data, loading, error, reload } = useFetch<City>('/core/cities')
+export default function BrandsPage() {
+  const { data, loading, error, reload } = useFetch<Brand>('/core/brands')
   const [creating, setCreating] = useState(false)
 
   return (
     <>
       <DataTable
-        title="Міста"
+        title="Бренди та формати"
         rows={data}
         loading={loading}
         error={error}
@@ -31,25 +29,14 @@ export default function CitiesPage() {
         }
         columns={[
           { header: 'Назва', render: (r) => r.name },
-          { header: 'Область', render: (r) => r.region.name },
-          { header: 'Магазинів', render: (r) => r._count.stores },
           { header: 'Статус', render: (r) => <StatusBadge status={r.status} /> },
         ]}
       />
       {creating && (
         <CreateModal
-          title="Нове місто"
-          endpoint="/core/cities"
-          fields={[
-            { name: 'name', label: 'Назва', required: true },
-            {
-              name: 'regionId',
-              label: 'Область',
-              kind: 'select',
-              required: true,
-              optionsUrl: '/core/regions',
-            },
-          ]}
+          title="Новий бренд / формат"
+          endpoint="/core/brands"
+          fields={[{ name: 'name', label: 'Назва', required: true }]}
           onClose={() => setCreating(false)}
           onCreated={() => {
             setCreating(false)

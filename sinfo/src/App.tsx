@@ -9,6 +9,7 @@ import CitiesPage from '@/pages/admin/CitiesPage'
 import StoresPage from '@/pages/admin/StoresPage'
 import RolesPage from '@/pages/admin/RolesPage'
 import AuditLogPage from '@/pages/admin/AuditLogPage'
+import BrandsPage from '@/pages/admin/BrandsPage'
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="stores" element={<StoresPage />} />
             <Route path="roles" element={<RolesPage />} />
             <Route path="audit-log" element={<AuditLogPage />} />
+            <Route path="brands" element={<BrandsPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/admin" replace />} />

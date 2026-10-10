@@ -9,6 +9,7 @@ import {
   ScrollText,
   ShieldCheck,
   Store,
+  Tag,
   Sun,
   Users,
   X,
@@ -32,6 +33,7 @@ const nav: NavGroup[] = [
       { to: '/admin/regions', label: 'Області', icon: MapPin },
       { to: '/admin/cities', label: 'Міста', icon: Building2 },
       { to: '/admin/stores', label: 'Магазини', icon: Store },
+      { to: '/admin/brands', label: 'Бренди', icon: Tag },
     ],
   },
   {

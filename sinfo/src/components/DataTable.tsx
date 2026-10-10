@@ -11,6 +11,7 @@ interface Props<T> {
   rows: T[]
   loading: boolean
   error: string
+  action?: ReactNode
 }
 
 export default function DataTable<T extends { id: string }>({
@@ -19,10 +20,14 @@ export default function DataTable<T extends { id: string }>({
   rows,
   loading,
   error,
+  action,
 }: Props<T>) {
   return (
     <div>
-      <h2 className="mb-4 text-xl font-semibold">{title}</h2>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold">{title}</h2>
+        {action}
+      </div>
       {loading && <p className="text-muted">Завантаження...</p>}
       {error && <p className="text-danger">{error}</p>}
       {!loading && !error && (
