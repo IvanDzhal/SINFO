@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { CreateRoleDto, SetRolePermissionsDto, UpdateRoleDto } from './dto/role.dto';
 
+const ADMIN_ROLE = 'Адмін';
 @Injectable()
 export class RolesService {
   constructor(private prisma: PrismaService, private audit: AuditService) {}
@@ -13,6 +14,12 @@ export class RolesService {
       orderBy: { name: 'asc' },
       include: { _count: { select: { users: true } } },
     });
+  }
+
+  private assertEditable(role: { name: string; isSystem: boolean }) {
+    if (role.isSystem && role.name === ADMIN_ROLE) {
+      throw new BadRequestException('Роль «Адмін» змінювати не можна');
+    }
   }
 
   async get(id: string) {
@@ -31,7 +38,7 @@ export class RolesService {
   }
 
   async update(actorId: string, id: string, dto: UpdateRoleDto) {
-    await this.get(id);
+    this.assertEditable(await this.get(id));
     const role = await this.prisma.role.update({ where: { id }, data: dto });
     await this.audit.log(actorId, 'role.updated', 'Role', id, { ...dto });
     return role;
@@ -46,7 +53,7 @@ export class RolesService {
   }
 
   async setPermissions(actorId: string, id: string, dto: SetRolePermissionsDto) {
-    await this.get(id);
+    this.assertEditable(await this.get(id));
     await this.prisma.$transaction([
       this.prisma.rolePermission.deleteMany({ where: { roleId: id } }),
       this.prisma.rolePermission.createMany({

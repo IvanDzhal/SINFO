@@ -19,6 +19,7 @@ export default function BrandsPage() {
     <>
       <DataTable
         title="Бренди та формати"
+        actionPerm="core.brands.create"
         rows={data}
         loading={loading}
         error={error}

@@ -4,6 +4,7 @@ import DataTable, { StatusBadge } from '@/components/DataTable'
 import Button from '@/components/Button'
 import { useFetch } from '@/hooks/useFetch'
 import CreateUserModal from './CreateUserModal'
+import { Link } from 'react-router-dom'
 
 interface UserRow {
   id: string
@@ -24,6 +25,7 @@ export default function UsersPage() {
     <>
       <DataTable
         title="Користувачі"
+        actionPerm="core.users.create"
         rows={data}
         loading={loading}
         error={error}
@@ -33,7 +35,14 @@ export default function UsersPage() {
           </Button>
         }
         columns={[
-          { header: "Ім'я", render: (u) => `${u.firstName} ${u.lastName}` },
+          {
+            header: "Ім'я",
+            render: (u) => (
+              <Link to={`/admin/users/${u.id}`} className="font-medium text-accent hover:underline">
+                {u.firstName} {u.lastName}
+              </Link>
+            ),
+          },
           { header: 'Логін', render: (u) => <span className="text-muted">{u.login}</span> },
           { header: 'Ролі', render: (u) => u.roles.map((r) => r.role.name).join(', ') },
           { header: 'Область', render: (u) => u.region?.name ?? '—' },

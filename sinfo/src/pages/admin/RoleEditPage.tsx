@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { api } from '@/services/api'
 import Button from '@/components/Button'
+import { useCan } from '@/hooks/useCan'
 import { getErrorMessage } from '@/utils/errors'
 
 type Scope = 'SELF' | 'STORE' | 'REGION' | 'GLOBAL'
@@ -64,19 +65,22 @@ const ACTION_LABEL: Record<string, string> = {
 }
 
 const selectClass =
-  'rounded-xl border border-border bg-surface-2 px-2 py-1.5 text-sm text-ink outline-none focus:border-accent'
+  'rounded-xl border border-border bg-surface-2 px-2 py-1.5 text-sm text-ink outline-none focus:border-accent disabled:opacity-60'
 
 function ScopeSelect({
   value,
   onChange,
+  disabled,
 }: {
   value: Scope | ''
   onChange: (v: Scope | '') => void
+  disabled?: boolean
 }) {
   return (
     <select
       className={selectClass}
       value={value}
+      disabled={disabled}
       onChange={(e) => onChange(e.target.value as Scope | '')}
     >
       <option value="">Немає доступу</option>
@@ -91,6 +95,7 @@ function ScopeSelect({
 
 export default function RoleEditPage() {
   const { id } = useParams()
+  const can = useCan()
   const [role, setRole] = useState<RoleDetail | null>(null)
   const [name, setName] = useState('')
   const [permissions, setPermissions] = useState<Permission[]>([])
@@ -167,9 +172,15 @@ export default function RoleEditPage() {
   if (loading) return <p className="text-muted">Завантаження...</p>
   if (!role) return <p className="text-danger">{error || 'Роль не знайдено'}</p>
 
+  const locked = role.isSystem && role.name === 'Адмін'
+  const readOnly = locked || !can('core.roles.edit')
+
   return (
     <div>
-      <Link to="/admin/roles" className="mb-3 inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
+      <Link
+        to="/admin/roles"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-muted hover:text-ink"
+      >
         <ArrowLeft size={16} /> Ролі
       </Link>
 
@@ -177,7 +188,7 @@ export default function RoleEditPage() {
         <input
           className="min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-xl font-semibold outline-none focus:border-accent disabled:opacity-70"
           value={name}
-          disabled={role.isSystem}
+          disabled={role.isSystem || readOnly}
           onChange={(e) => setName(e.target.value)}
         />
         {role.isSystem && (
@@ -187,7 +198,11 @@ export default function RoleEditPage() {
         )}
       </div>
 
-      {role.isSystem && (
+      {locked && (
+        <p className="mb-4 text-sm text-muted">Права ролі «Адмін» захищені від змін.</p>
+      )}
+
+      {role.isSystem && !locked && (
         <p className="mb-4 text-sm text-muted">
           Зміна прав системної ролі вплине на всіх користувачів, яким вона призначена.
         </p>
@@ -200,7 +215,7 @@ export default function RoleEditPage() {
               <h3 className="font-medium">{GROUP_LABEL[key] ?? key}</h3>
               <label className="flex items-center gap-2 text-sm text-muted">
                 Всім:
-                <ScopeSelect value="" onChange={(v) => setGroup(items, v)} />
+                <ScopeSelect value="" disabled={readOnly} onChange={(v) => setGroup(items, v)} />
               </label>
             </div>
             {items.map((p) => {
@@ -214,7 +229,11 @@ export default function RoleEditPage() {
                     <p className="text-sm">{ACTION_LABEL[action] ?? action}</p>
                     <p className="truncate text-xs text-muted">{p.code}</p>
                   </div>
-                  <ScopeSelect value={scopes[p.id] ?? ''} onChange={(v) => setOne(p.id, v)} />
+                  <ScopeSelect
+                    value={scopes[p.id] ?? ''}
+                    disabled={readOnly}
+                    onChange={(v) => setOne(p.id, v)}
+                  />
                 </div>
               )
             })}
@@ -222,13 +241,15 @@ export default function RoleEditPage() {
         ))}
       </div>
 
-      <div className="sticky bottom-0 mt-4 flex items-center justify-end gap-3 border-t border-border bg-bg py-3">
-        {message && <span className="text-sm text-success">{message}</span>}
-        {error && <span className="text-sm text-danger">{error}</span>}
-        <Button onClick={save} disabled={saving}>
-          {saving ? 'Збереження...' : 'Зберегти'}
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="sticky bottom-0 mt-4 flex items-center justify-end gap-3 border-t border-border bg-bg py-3">
+          {message && <span className="text-sm text-success">{message}</span>}
+          {error && <span className="text-sm text-danger">{error}</span>}
+          <Button onClick={save} disabled={saving}>
+            {saving ? 'Збереження...' : 'Зберегти'}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

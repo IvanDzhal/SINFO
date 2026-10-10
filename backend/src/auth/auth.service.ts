@@ -8,7 +8,9 @@ export class AuthService {
   constructor(private prisma: PrismaService, private jwt: JwtService) {}
 
   async login(login: string, password: string) {
-    const user = await this.prisma.user.findUnique({ where: { login } });
+    const user = await this.prisma.user.findFirst({
+      where: { login: { equals: login.trim(), mode: 'insensitive' } },
+    });
     if (
       !user ||
       user.status !== 'active' ||
@@ -34,6 +36,14 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Недійсний refresh token');
     }
+  }
+
+  async permissionsOf(userId: string) {
+    const rows = await this.prisma.rolePermission.findMany({
+      where: { role: { archivedAt: null, users: { some: { userId } } } },
+      include: { permission: true },
+    });
+    return [...new Set(rows.map((r) => r.permission.code))];
   }
 
   private async issueTokens(sub: string, login: string) {

@@ -6,6 +6,7 @@ export interface AuthUser {
   firstName: string
   lastName: string
   status: string
+  permissions: string[]
   roles: { role: { id: string; name: string } }[]
 }
 

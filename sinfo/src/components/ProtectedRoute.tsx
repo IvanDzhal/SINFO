@@ -4,7 +4,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/store/useAuthStore'
 
-export default function ProtectedRoute() {
+export default function ProtectedRoute({ permission }: { permission?: string }) {
   const { user, refreshToken, setSession, logout } = useAuthStore()
   const [checking, setChecking] = useState(!user && !!refreshToken)
 
@@ -25,5 +25,6 @@ export default function ProtectedRoute() {
 
   if (checking) return <p className="p-6 text-muted">Завантаження...</p>
   if (!user) return <Navigate to="/login" replace />
+  if (permission && !user.permissions.includes(permission)) return <Navigate to="/" replace />
   return <Outlet />
 }

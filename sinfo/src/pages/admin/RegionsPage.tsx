@@ -20,6 +20,7 @@ export default function RegionsPage() {
     <>
       <DataTable
         title="Області"
+        actionPerm="core.regions.create"
         rows={data}
         loading={loading}
         error={error}

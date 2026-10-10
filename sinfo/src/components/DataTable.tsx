@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useCan } from '@/hooks/useCan'
 
 export interface Column<T> {
   header: string
@@ -12,6 +13,7 @@ interface Props<T> {
   loading: boolean
   error: string
   action?: ReactNode
+  actionPerm?: string
 }
 
 export default function DataTable<T extends { id: string }>({
@@ -21,12 +23,15 @@ export default function DataTable<T extends { id: string }>({
   loading,
   error,
   action,
+  actionPerm,
 }: Props<T>) {
+  const can = useCan()
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-xl font-semibold">{title}</h2>
-        {action}
+        {action && (!actionPerm || can(actionPerm)) && action}
       </div>
       {loading && <p className="text-muted">Завантаження...</p>}
       {error && <p className="text-danger">{error}</p>}

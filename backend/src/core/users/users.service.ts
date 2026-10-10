@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import * as argon2 from 'argon2';
 import { UserStatus } from '@prisma/client';
+import * as argon2 from 'argon2';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import {
@@ -24,7 +24,13 @@ const SAFE_INCLUDE = {
 export class UsersService {
   constructor(private prisma: PrismaService, private audit: AuditService) {}
 
-  async list(filters: { status?: string; roleId?: string; regionId?: string; storeId?: string; search?: string }) {
+  async list(filters: {
+    status?: string;
+    roleId?: string;
+    regionId?: string;
+    storeId?: string;
+    search?: string;
+  }) {
     const users = await this.prisma.user.findMany({
       where: {
         status: filters.status as UserStatus | undefined,
@@ -53,12 +59,15 @@ export class UsersService {
   }
 
   async create(actorId: string, dto: CreateUserDto) {
-    const existing = await this.prisma.user.findUnique({ where: { login: dto.login } });
+    const login = dto.login.trim();
+    const existing = await this.prisma.user.findFirst({
+      where: { login: { equals: login, mode: 'insensitive' } },
+    });
     if (existing) throw new BadRequestException('Такий логін вже зайнятий');
 
     const user = await this.prisma.user.create({
       data: {
-        login: dto.login,
+        login,
         passwordHash: await argon2.hash(dto.password),
         firstName: dto.firstName,
         lastName: dto.lastName,
@@ -77,16 +86,28 @@ export class UsersService {
 
   async update(actorId: string, id: string, dto: UpdateUserDto) {
     await this.get(id);
-    const user = await this.prisma.user.update({ where: { id }, data: dto, include: SAFE_INCLUDE });
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: dto,
+      include: SAFE_INCLUDE,
+    });
     await this.audit.log(actorId, 'user.updated', 'User', id, { ...dto });
     const { passwordHash, ...safe } = user;
     return safe;
   }
 
   async setStatus(actorId: string, id: string, status: 'active' | 'inactive') {
+    if (id === actorId && status === 'inactive') {
+      throw new BadRequestException('Не можна деактивувати себе');
+    }
     await this.get(id);
     await this.prisma.user.update({ where: { id }, data: { status } });
-    await this.audit.log(actorId, status === 'active' ? 'user.activated' : 'user.deactivated', 'User', id);
+    await this.audit.log(
+      actorId,
+      status === 'active' ? 'user.activated' : 'user.deactivated',
+      'User',
+      id,
+    );
     return { ok: true };
   }
 
@@ -101,19 +122,33 @@ export class UsersService {
   }
 
   async changeLogin(actorId: string, id: string, dto: ChangeLoginDto) {
-    const existing = await this.prisma.user.findUnique({ where: { login: dto.newLogin } });
+    const newLogin = dto.newLogin.trim();
+    const existing = await this.prisma.user.findFirst({
+      where: { id: { not: id }, login: { equals: newLogin, mode: 'insensitive' } },
+    });
     if (existing) throw new BadRequestException('Такий логін вже зайнятий');
     const user = await this.get(id);
-    await this.prisma.user.update({ where: { id }, data: { login: dto.newLogin } });
-    await this.audit.log(actorId, 'user.login_changed', 'User', id, { from: user.login, to: dto.newLogin });
+    await this.prisma.user.update({ where: { id }, data: { login: newLogin } });
+    await this.audit.log(actorId, 'user.login_changed', 'User', id, {
+      from: user.login,
+      to: newLogin,
+    });
     return { ok: true };
   }
 
   async setRoles(actorId: string, id: string, dto: SetUserRolesDto) {
+    const adminRole = await this.prisma.userRole.findFirst({
+      where: { userId: id, role: { name: 'Адмін' } },
+    });
+    if (id === actorId && adminRole && !dto.roleIds.includes(adminRole.roleId)) {
+      throw new BadRequestException('Не можна забрати у себе роль «Адмін»');
+    }
     await this.get(id);
     await this.prisma.$transaction([
       this.prisma.userRole.deleteMany({ where: { userId: id } }),
-      this.prisma.userRole.createMany({ data: dto.roleIds.map((roleId) => ({ userId: id, roleId })) }),
+      this.prisma.userRole.createMany({
+        data: dto.roleIds.map((roleId) => ({ userId: id, roleId })),
+      }),
     ]);
     await this.audit.log(actorId, 'user.roles_updated', 'User', id, { roleIds: dto.roleIds });
     return this.get(id);
@@ -123,9 +158,13 @@ export class UsersService {
     await this.get(id);
     await this.prisma.$transaction([
       this.prisma.userRegion.deleteMany({ where: { userId: id } }),
-      this.prisma.userRegion.createMany({ data: dto.regionIds.map((regionId) => ({ userId: id, regionId })) }),
+      this.prisma.userRegion.createMany({
+        data: dto.regionIds.map((regionId) => ({ userId: id, regionId })),
+      }),
     ]);
-    await this.audit.log(actorId, 'user.managed_regions_updated', 'User', id, { regionIds: dto.regionIds });
+    await this.audit.log(actorId, 'user.managed_regions_updated', 'User', id, {
+      regionIds: dto.regionIds,
+    });
     return this.get(id);
   }
 }

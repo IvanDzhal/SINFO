@@ -7,6 +7,7 @@ import CreateModal from '@/components/CreateModal'
 import { useFetch } from '@/hooks/useFetch'
 import { api } from '@/services/api'
 import { getErrorMessage } from '@/utils/errors'
+import { useCan } from '@/hooks/useCan'
 
 interface Role {
   id: string
@@ -18,6 +19,7 @@ interface Role {
 export default function RolesPage() {
   const { data, loading, error, reload } = useFetch<Role>('/core/roles')
   const [creating, setCreating] = useState(false)
+  const can = useCan()
 
   async function copyRole(role: Role) {
     const name = window.prompt('Назва нової ролі', `${role.name} (копія)`)
@@ -48,6 +50,7 @@ export default function RolesPage() {
     <>
       <DataTable
         title="Ролі"
+        actionPerm="core.roles.create"
         rows={data}
         loading={loading}
         error={error}
@@ -71,10 +74,12 @@ export default function RolesPage() {
             header: 'Дії',
             render: (r) => (
               <div className="flex gap-4 text-sm">
-                <button className="text-accent hover:underline" onClick={() => copyRole(r)}>
-                  Копіювати
-                </button>
-                {!r.isSystem && (
+                {can('core.roles.create') && (
+                  <button className="text-accent hover:underline" onClick={() => copyRole(r)}>
+                    Копіювати
+                  </button>
+                )}
+                {!r.isSystem && can('core.roles.archive') && (
                   <button className="text-danger hover:underline" onClick={() => archiveRole(r)}>
                     Архівувати
                   </button>

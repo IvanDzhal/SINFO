@@ -21,6 +21,7 @@ export default function CitiesPage() {
     <>
       <DataTable
         title="Міста"
+        actionPerm="core.cities.create"
         rows={data}
         loading={loading}
         error={error}

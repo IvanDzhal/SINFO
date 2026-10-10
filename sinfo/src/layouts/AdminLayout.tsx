@@ -18,6 +18,7 @@ import {
 import clsx from 'clsx'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useThemeStore } from '@/store/useThemeStore'
+import { useCan } from '@/hooks/useCan'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 type NavGroup = { group: string; items: NavItem[] }
@@ -47,13 +48,31 @@ const nav: NavGroup[] = [
     group: 'Система',
     items: [{ to: '/admin/audit-log', label: 'Журнал дій', icon: ScrollText }],
   },
+
+  
 ]
+
+const PERM: Record<string, string> = {
+  '/admin': 'admin.access',
+  '/admin/regions': 'core.regions.view',
+  '/admin/cities': 'core.cities.view',
+  '/admin/stores': 'core.stores.view',
+  '/admin/brands': 'core.brands.view',
+  '/admin/users': 'core.users.view',
+  '/admin/roles': 'core.roles.view',
+  '/admin/audit-log': 'admin.audit.view',
+}
 
 export default function AdminLayout() {
   const { user, logout } = useAuthStore()
   const { theme, toggle } = useThemeStore()
   const [open, setOpen] = useState(false)
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`
+
+const can = useCan()
+  const visibleNav = nav
+    .map((g) => ({ ...g, items: g.items.filter((i) => can(PERM[i.to])) }))
+    .filter((g) => g.items.length > 0)
 
   return (
     <div className="min-h-screen bg-bg text-ink">
@@ -79,7 +98,7 @@ export default function AdminLayout() {
           </button>
         </div>
         <nav className="px-3 pb-3">
-          {nav.map((group) => (
+          {visibleNav.map((group) =>(
             <div key={group.group} className="mb-4">
               <p className="mb-1 px-3 text-xs font-medium uppercase text-muted">
                 {group.group}

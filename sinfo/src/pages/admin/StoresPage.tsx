@@ -16,6 +16,7 @@ export default function StoresPage() {
   return (
     <DataTable
       title="Магазини"
+      actionPerm="core.stores.create"
       rows={data}
       loading={loading}
       error={error}

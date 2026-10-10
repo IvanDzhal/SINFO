@@ -4,6 +4,7 @@ import { api } from '@/services/api'
 import Modal from '@/components/Modal'
 import Button from '@/components/Button'
 import { Input, Select } from '@/components/Field'
+import { makeLogin } from '@/utils/translit'
 
 interface Item {
   id: string
@@ -56,6 +57,13 @@ export default function CreateUserModal({ onClose, onCreated }: Props) {
 
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }))
 
+  const [loginTouched, setLoginTouched] = useState(false)
+
+  function changeName(patch: { firstName?: string; lastName?: string }) {
+    const next = { ...form, ...patch }
+    set(loginTouched ? patch : { ...patch, login: makeLogin(next.firstName, next.lastName) })
+  }
+
   function toggleRole(id: string) {
     setRoleIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
   }
@@ -92,19 +100,19 @@ export default function CreateUserModal({ onClose, onCreated }: Props) {
           <Input
             label="Ім'я"
             value={form.firstName}
-            onChange={(e) => set({ firstName: e.target.value })}
+            onChange={(e) => changeName({ firstName: e.target.value })}
             required
           />
           <Input
             label="Прізвище"
             value={form.lastName}
-            onChange={(e) => set({ lastName: e.target.value })}
+            onChange={(e) => changeName({ lastName: e.target.value })}
             required
           />
           <Input
             label="Логін"
             value={form.login}
-            onChange={(e) => set({ login: e.target.value })}
+            onChange={(e) => { setLoginTouched(true); set({ login: e.target.value }) }}
             required
           />
           <Input

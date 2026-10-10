@@ -19,7 +19,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@Req() req: any) {
-    return req.user;
+  async me(@Req() req: any) {
+    return { ...req.user, permissions: await this.auth.permissionsOf(req.user.id) };
   }
 }
