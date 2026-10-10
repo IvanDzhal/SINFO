@@ -1,0 +1,28 @@
+const LABELS: Record<string, string> = {
+  'region.created': 'Створено область',
+  'region.updated': 'Змінено область',
+  'city.created': 'Створено місто',
+  'city.updated': 'Змінено місто',
+  'brand.created': 'Створено бренд',
+  'brand.updated': 'Змінено бренд',
+  'store.created': 'Створено магазин',
+  'store.updated': 'Змінено магазин',
+  'role.created': 'Створено роль',
+  'role.updated': 'Змінено роль',
+  'role.copied': 'Скопійовано роль',
+  'role.archived': 'Архівовано роль',
+  'role.permissions_updated': 'Змінено права ролі',
+  'user.created': 'Створено користувача',
+  'user.updated': 'Змінено дані користувача',
+  'user.activated': 'Активовано користувача',
+  'user.deactivated': 'Деактивовано користувача',
+  'user.deleted': 'Видалено користувача',
+  'user.password_reset': 'Змінено пароль користувача',
+  'user.login_changed': 'Змінено логін користувача',
+  'user.roles_updated': 'Змінено ролі користувача',
+  'user.managed_regions_updated': 'Змінено області менеджера',
+}
+
+export function actionLabel(code: string) {
+  return LABELS[code] ?? code
+}
