@@ -21,6 +21,7 @@ import { useThemeStore } from '@/store/useThemeStore'
 import { useCan } from '@/hooks/useCan'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
 import SearchBox from '@/components/SearchBox'
+import logo from '../assets/SINFO_LOGO.png';
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; perms?: string[] }
 
@@ -61,19 +62,23 @@ export default function UserLayout() {
         <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setOpen(false)} />
       )}
 
-      <aside
-        className={clsx(
-          'fixed inset-y-0 left-0 z-40 flex w-64 flex-col overflow-y-auto border-r border-border bg-surface transition-transform lg:translate-x-0',
-          open ? 'translate-x-0' : '-translate-x-full',
-        )}
-      >
+        <aside
+          className={clsx(
+            'fixed inset-y-0 left-0 z-40 flex w-64 flex-col overflow-y-auto border-r border-border bg-surface transition-transform lg:translate-x-0',
+            open ? 'translate-x-0' : '-translate-x-full',
+          )}
+        >
         <div className="flex items-center justify-between px-5 py-4">
-          <span className="text-base font-semibold">
-            <span className="text-accent">Слухавка</span> Info
-          </span>
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-base font-semibold"
+            title="2.10.26"
+          >
+          <img src={logo} alt="Слухавка Інфо" className="h-8 w-auto" />
+          </Link>
           <button className="lg:hidden" onClick={() => setOpen(false)} aria-label="Закрити меню">
             <X size={20} />
-          </button>
+        </button>
         </div>
 
         <nav className="flex-1 px-3 pb-3">
@@ -100,7 +105,7 @@ export default function UserLayout() {
             </NavLink>
           </div>
         )}
-      </aside>
+        </aside>
 
       <div className="lg:pl-64">
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-bg px-4 py-3 lg:px-6">

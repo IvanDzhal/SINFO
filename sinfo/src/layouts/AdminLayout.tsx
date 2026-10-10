@@ -21,6 +21,7 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { useThemeStore } from '@/store/useThemeStore'
 import { useCan } from '@/hooks/useCan'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
+import logo from '../assets/SINFO_LOGO.png';
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 type NavGroup = { group: string; items: NavItem[] }
@@ -98,9 +99,13 @@ const can = useCan()
         )}
       >
         <div className="flex items-center justify-between px-5 py-4">
-          <span className="text-base font-semibold">
-            <span className="text-accent">Слухавка</span> Info
-          </span>
+                  <Link
+                  to="/"
+                  className="flex items-center gap-2 text-base font-semibold"
+                  title="2.10.26"
+                  >
+                <img src={logo} alt="Слухавка Інфо" className="h-8 w-auto" />
+          </Link>
           <button className="lg:hidden" onClick={() => setOpen(false)} aria-label="Закрити меню">
             <X size={20} />
           </button>
