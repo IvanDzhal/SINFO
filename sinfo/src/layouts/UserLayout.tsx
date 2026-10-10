@@ -20,6 +20,7 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { useThemeStore } from '@/store/useThemeStore'
 import { useCan } from '@/hooks/useCan'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
+import SearchBox from '@/components/SearchBox'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; perms?: string[] }
 
@@ -106,7 +107,7 @@ export default function UserLayout() {
           <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Відкрити меню">
             <Menu size={22} />
           </button>
-          <div className="hidden lg:block" />
+          {can('knowledge.view') ? <SearchBox /> : <div />}
           <div className="flex items-center gap-3">
             <button
               onClick={toggle}

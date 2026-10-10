@@ -17,6 +17,7 @@ import RoleEditPage from '@/pages/admin/RoleEditPage'
 import AuditLogPage from '@/pages/admin/AuditLogPage'
 import CategoriesPage from '@/pages/admin/CategoriesPage'
 import KnowledgeListPage from '@/pages/KnowledgeListPage'
+import KnowledgeArticlePage from '@/pages/KnowledgeArticlePage'
 
 const stubs = [
   { path: 'about', title: 'Про компанію' },
@@ -37,7 +38,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="instructions" element={<KnowledgeListPage key="instruction" type="instruction" />} />
             <Route path="materials" element={<KnowledgeListPage key="material" type="material" />} />
-            <Route path="knowledge/:id" element={<PlaceholderPage title="Стаття" />} />
+            <Route path="knowledge/:id" element={<KnowledgeArticlePage />} />
             {stubs.map((s) => (
               <Route key={s.path} path={s.path} element={<PlaceholderPage title={s.title} />} />
             ))}

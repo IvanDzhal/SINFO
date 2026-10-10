@@ -50,3 +50,12 @@ body {
   background: var(--bg);
   color: var(--ink);
 }
+
+.bn-container,
+.bn-editor {
+  background: transparent !important;
+}
+
+.bn-editor {
+  padding-inline: 0 !important;
+}

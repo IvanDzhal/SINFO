@@ -1,4 +1,14 @@
-import { BadRequestException, Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { KnowledgeType } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
@@ -17,11 +27,35 @@ export class ItemsController {
   }
 
   @Permissions('knowledge.view')
+  @Get('search')
+  search(@Req() req: any, @Query('q') q?: string) {
+    return this.service.search(req.user, q ?? '');
+  }
+
+  @Permissions('knowledge.view')
   @Get()
   list(@Req() req: any, @Query('type') type?: string) {
     if (!type || !(Object.values(KnowledgeType) as string[]).includes(type)) {
       throw new BadRequestException('Невірний тип');
     }
     return this.service.list(req.user, type as KnowledgeType);
+  }
+
+  @Permissions('knowledge.view')
+  @Get(':id/similar')
+  similar(@Req() req: any, @Param('id') id: string) {
+    return this.service.similar(req.user, id);
+  }
+
+  @Permissions('knowledge.view')
+  @Get(':id')
+  get(@Req() req: any, @Param('id') id: string) {
+    return this.service.get(req.user, id);
+  }
+
+  @Permissions('knowledge.view')
+  @Post(':id/read')
+  markRead(@Req() req: any, @Param('id') id: string, @Body('token') token: string) {
+    return this.service.markRead(req.user, id, token);
   }
 }
