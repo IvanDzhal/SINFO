@@ -8,14 +8,23 @@ export function useFetch<T>(url: string) {
   const [tick, setTick] = useState(0)
 
   useEffect(() => {
+    let cancelled = false
     api
       .get(url)
       .then((r) => {
+        if (cancelled) return
         setData(r.data)
         setError('')
       })
-      .catch(() => setError('Не вдалося завантажити дані'))
-      .finally(() => setLoading(false))
+      .catch(() => {
+        if (!cancelled) setError('Не вдалося завантажити дані')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [url, tick])
 
   return { data, loading, error, reload: () => setTick((t) => t + 1) }

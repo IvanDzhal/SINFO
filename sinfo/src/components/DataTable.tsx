@@ -14,6 +14,7 @@ interface Props<T> {
   error: string
   action?: ReactNode
   actionPerm?: string
+  toolbar?: ReactNode
 }
 
 export default function DataTable<T extends { id: string }>({
@@ -24,6 +25,7 @@ export default function DataTable<T extends { id: string }>({
   error,
   action,
   actionPerm,
+  toolbar
 }: Props<T>) {
   const can = useCan()
 
@@ -34,6 +36,7 @@ export default function DataTable<T extends { id: string }>({
         {action && (!actionPerm || can(actionPerm)) && action}
       </div>
       {loading && <p className="text-muted">Завантаження...</p>}
+      {toolbar}
       {error && <p className="text-danger">{error}</p>}
       {!loading && !error && (
         <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
