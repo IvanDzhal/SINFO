@@ -10,6 +10,7 @@ import StoresPage from '@/pages/admin/StoresPage'
 import RolesPage from '@/pages/admin/RolesPage'
 import AuditLogPage from '@/pages/admin/AuditLogPage'
 import BrandsPage from '@/pages/admin/BrandsPage'
+import RoleEditPage from '@/pages/admin/RoleEditPage'
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="cities" element={<CitiesPage />} />
             <Route path="stores" element={<StoresPage />} />
             <Route path="roles" element={<RolesPage />} />
+            <Route path="roles/:id" element={<RoleEditPage />} />
             <Route path="audit-log" element={<AuditLogPage />} />
             <Route path="brands" element={<BrandsPage />} />
           </Route>
