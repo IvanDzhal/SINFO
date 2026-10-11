@@ -45,6 +45,7 @@ model User {
   knowledgeReads KnowledgeRead[]
   knowledgeVersions KnowledgeVersion[]
   knowledgeFiles KnowledgeFile[]
+  notifications Notification[]
 }
 
 model Role {
@@ -267,4 +268,21 @@ model KnowledgeFile {
   createdAt    DateTime       @default(now())
 
   @@index([itemId])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  kind      String
+  title     String
+  body      String    @default("")
+  link      String
+  itemId    String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId, kind])
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
 }

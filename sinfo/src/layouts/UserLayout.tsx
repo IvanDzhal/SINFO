@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import logo from '../assets/SINFO_LOGO.png';
 import {
   BookOpen,
   Briefcase,
@@ -21,7 +22,9 @@ import { useThemeStore } from '@/store/useThemeStore'
 import { useCan } from '@/hooks/useCan'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
 import SearchBox from '@/components/SearchBox'
-import logo from '../assets/SINFO_LOGO.png';
+import NotificationsBell from '@/components/NotificationsBell'
+import SidebarCategories from '@/components/SidebarCategories'
+import Footer from '@/components/Footer'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; perms?: string[] }
 
@@ -95,6 +98,7 @@ export default function UserLayout() {
               {item.label}
             </NavLink>
           ))}
+          {can('knowledge.view') && <SidebarCategories onNavigate={() => setOpen(false)} />}
         </nav>
 
         {can('admin.access') && (
@@ -107,13 +111,14 @@ export default function UserLayout() {
         )}
         </aside>
 
-      <div className="lg:pl-64">
+      <div className="flex min-h-screen flex-col lg:pl-64">
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-bg px-4 py-3 lg:px-6">
           <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Відкрити меню">
             <Menu size={22} />
           </button>
           {can('knowledge.view') ? <SearchBox /> : <div />}
           <div className="flex items-center gap-3">
+            <NotificationsBell />
             <button
               onClick={toggle}
               aria-label="Змінити тему"
@@ -137,9 +142,10 @@ export default function UserLayout() {
             </button>
           </div>
         </header>
-        <main className="p-4 lg:p-6">
+        <main className="flex-1 p-4 lg:p-6">
           <Outlet />
         </main>
+        <Footer />
       </div>
     </div>
   )

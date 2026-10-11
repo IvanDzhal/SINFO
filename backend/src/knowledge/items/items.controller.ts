@@ -23,14 +23,14 @@ export class ItemsController {
 
   @Permissions('knowledge.view')
   @Get('latest')
-  latest(@Req() req: any, @Query('limit') limit?: string) {
-    return this.service.latest(req.user, Number(limit) || 6);
+  latest(@Req() req: any, @Query('limit') limit?: string, @Query('type') type?: string) {
+    return this.service.latest(req.user, Number(limit) || 6, type);
   }
 
   @Permissions('knowledge.view')
-  @Get('search')
-  search(@Req() req: any, @Query('q') q?: string) {
-    return this.service.search(req.user, q ?? '');
+  @Get('category-counts')
+  categoryCounts(@Req() req: any, @Query('type') type?: string) {
+    return this.service.categoryCounts(req.user, type);
   }
 
   @Permissions('knowledge.view')

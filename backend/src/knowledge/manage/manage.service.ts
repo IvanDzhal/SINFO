@@ -8,6 +8,7 @@ import { KnowledgeStatus, KnowledgeType, Prisma, VisibilityKind } from '@prisma/
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { uniqueSlug } from '../slug';
+import { NotificationsService } from '../../notifications/notifications.service';
 import {
   Actor,
   authorWhere,
@@ -24,7 +25,11 @@ const asJson = (v: unknown) => v as Prisma.InputJsonValue;
 
 @Injectable()
 export class ManageService {
-  constructor(private prisma: PrismaService, private audit: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+    private notifications: NotificationsService,
+  ) {}
 
   async list(user: Actor, type?: string, status?: string) {
     const scopes = await scopesFor(this.prisma, user.id, 'knowledge.edit');
@@ -196,6 +201,9 @@ export class ManageService {
     });
     await this.snapshot(updated, user.id);
     await this.audit.log(user.id, 'knowledge_item.published', 'KnowledgeItem', id, { version });
+    if (updated.type === 'news') {
+      await this.notifications.notifyItem(updated, item.visibility, user.id);
+    }
     return { id, status: updated.status, version: updated.version };
   }
 

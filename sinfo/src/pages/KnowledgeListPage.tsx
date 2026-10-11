@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Check, Clock, FileText, Plus } from 'lucide-react'
 import clsx from 'clsx'
 import { useFetch } from '@/hooks/useFetch'
 import { useCan } from '@/hooks/useCan'
 
-type ItemType = 'instruction' | 'material'
+type ItemType = 'instruction' | 'material' | 'news'
 type Mode = 'published' | 'draft' | 'archived'
 
 interface Category {
@@ -17,6 +17,7 @@ interface Category {
 
 interface Item {
   id: string
+  slug: string | null
   title: string
   description: string
   readingTimeMinutes: number
@@ -24,7 +25,6 @@ interface Item {
   updatedAt: string
   isRead?: boolean
   category: Category | null
-  slug: string | null
 }
 
 const TEXT: Record<ItemType, { title: string; subtitle: string }> = {
@@ -35,6 +35,10 @@ const TEXT: Record<ItemType, { title: string; subtitle: string }> = {
   material: {
     title: 'Робочі матеріали',
     subtitle: 'Умови роботи, документи та корпоративні матеріали',
+  },
+  news: {
+    title: 'Новини',
+    subtitle: 'Новини компанії та важливі оголошення',
   },
 }
 
@@ -63,12 +67,19 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
       : `/knowledge/manage/items?type=${type}&status=${mode}`
   const items = useFetch<Item>(url)
   const cats = useFetch<Category>('/knowledge/categories')
-  const [filter, setFilter] = useState('all')
+  const [params, setParams] = useSearchParams()
+  const category = params.get('category') ?? 'all'
+  const [unread, setUnread] = useState(false)
   const [sort, setSort] = useState('new')
+
+  function pickCategory(key: string) {
+    setParams(key === 'all' ? {} : { category: key }, { replace: true })
+  }
 
   function changeMode(next: Mode) {
     setMode(next)
-    setFilter('all')
+    setUnread(false)
+    pickCategory('all')
   }
 
   const roots = useMemo(() => {
@@ -84,20 +95,14 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
 
   const visible = useMemo(() => {
     let list = items.data
-    if (filter === 'unread') list = list.filter((i) => !i.isRead)
-    else if (filter !== 'all') list = list.filter((i) => rootId(i) === filter)
+    if (unread) list = list.filter((i) => !i.isRead)
+    if (category !== 'all') list = list.filter((i) => rootId(i) === category)
     return [...list].sort((a, b) => {
       if (sort === 'title') return a.title.localeCompare(b.title, 'uk')
       const diff = new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       return sort === 'old' ? -diff : diff
     })
-  }, [items.data, filter, sort])
-
-  const chips = [
-    { key: 'all', label: 'Усі' },
-    ...(mode === 'published' ? [{ key: 'unread', label: 'Непрочитані' }] : []),
-    ...roots.map((c) => ({ key: c.id, label: c.name })),
-  ]
+  }, [items.data, category, unread, sort])
 
   return (
     <div>
@@ -138,10 +143,10 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
           {roots.map((c) => (
             <button
               key={c.id}
-              onClick={() => setFilter(filter === c.id ? 'all' : c.id)}
+              onClick={() => pickCategory(category === c.id ? 'all' : c.id)}
               className={clsx(
                 'flex items-center gap-3 rounded-2xl border bg-surface p-4 text-left hover:border-accent',
-                filter === c.id ? 'border-accent' : 'border-border',
+                category === c.id ? 'border-accent' : 'border-border',
               )}
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-lg">
@@ -160,18 +165,45 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          {chips.map((c) => (
+          <button
+            onClick={() => {
+              pickCategory('all')
+              setUnread(false)
+            }}
+            className={clsx(
+              'rounded-full border px-3 py-1 text-sm',
+              category === 'all' && !unread
+                ? 'border-accent bg-accent-soft text-accent'
+                : 'border-border bg-surface hover:bg-surface-2',
+            )}
+          >
+            Усі
+          </button>
+          {mode === 'published' && (
             <button
-              key={c.key}
-              onClick={() => setFilter(c.key)}
+              onClick={() => setUnread((u) => !u)}
               className={clsx(
                 'rounded-full border px-3 py-1 text-sm',
-                filter === c.key
+                unread
                   ? 'border-accent bg-accent-soft text-accent'
                   : 'border-border bg-surface hover:bg-surface-2',
               )}
             >
-              {c.label}
+              Непрочитані
+            </button>
+          )}
+          {roots.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => pickCategory(category === c.id ? 'all' : c.id)}
+              className={clsx(
+                'rounded-full border px-3 py-1 text-sm',
+                category === c.id
+                  ? 'border-accent bg-accent-soft text-accent'
+                  : 'border-border bg-surface hover:bg-surface-2',
+              )}
+            >
+              {c.name}
             </button>
           ))}
         </div>

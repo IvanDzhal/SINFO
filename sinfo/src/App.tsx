@@ -38,6 +38,7 @@ function App() {
           <Route element={<UserLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="instructions" element={<KnowledgeListPage key="instruction" type="instruction" />} />
+            <Route path="news" element={<KnowledgeListPage key="news" type="news" />} />
             <Route path="materials" element={<KnowledgeListPage key="material" type="material" />} />
             <Route path="knowledge/:id" element={<KnowledgeArticlePage />} />
             <Route path="knowledge/new" element={<KnowledgeEditPage />} />

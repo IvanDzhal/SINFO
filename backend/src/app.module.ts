@@ -17,9 +17,10 @@ import { CategoriesModule } from './knowledge/categories/categories.module';
 import { ItemsModule } from './knowledge/items/items.module';
 import { ManageModule } from './knowledge/manage/manage.module';
 import { FilesModule } from './knowledge/files/files.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AuditModule, RegionsModule, CitiesModule, BrandsModule, StoresModule, PermissionsModule, RolesModule, UsersModule, DashboardModule, PresenceModule, CategoriesModule, ItemsModule, ManageModule, FilesModule],
+  imports: [PrismaModule, AuthModule, AuditModule, RegionsModule, CitiesModule, BrandsModule, StoresModule, PermissionsModule, RolesModule, UsersModule, DashboardModule, PresenceModule, CategoriesModule, ItemsModule, ManageModule, FilesModule, NotificationsModule],
   controllers: [AppController],
   providers: [AppService],
 })

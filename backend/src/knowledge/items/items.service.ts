@@ -89,10 +89,19 @@ export class ItemsService {
     return items.map(({ reads, ...rest }) => ({ ...rest, isRead: reads.length > 0 }));
   }
 
-  async latest(user: Viewer, limit: number) {
+  async latest(user: Viewer, limit: number, type?: string) {
     const where = await this.visibleWhere(user);
-    return this.prisma.knowledgeItem.findMany({
-      where,
+    const kind =
+      type && (Object.values(KnowledgeType) as string[]).includes(type)
+        ? (type as KnowledgeType)
+        : undefined;
+    // без параметра type показуємо тільки інструкції й матеріали (новини йдуть окремим блоком)
+    const typeFilter: Prisma.KnowledgeItemWhereInput = kind
+      ? { type: kind }
+      : { type: { in: ['instruction', 'material'] } };
+
+    const items = await this.prisma.knowledgeItem.findMany({
+      where: { AND: [where, typeFilter] },
       orderBy: { publishedAt: 'desc' },
       take: Math.min(Math.max(limit || 6, 1), 20),
       select: {
@@ -100,11 +109,14 @@ export class ItemsService {
         slug: true,
         type: true,
         title: true,
+        description: true,
         isRequired: true,
         publishedAt: true,
         author: { select: { firstName: true, lastName: true } },
+        reads: { where: { userId: user.id }, select: { id: true } },
       },
     });
+    return items.map(({ reads, ...rest }) => ({ ...rest, isRead: reads.length > 0 }));
   }
 
   private sign(userId: string, itemId: string, ts: number) {
@@ -302,5 +314,34 @@ export class ItemsService {
       select: { id: true },
     });
     return !!found;
+  }
+
+  async categoryCounts(user: Viewer, type?: string) {
+    const kind =
+      type && (Object.values(KnowledgeType) as string[]).includes(type)
+        ? (type as KnowledgeType)
+        : 'instruction';
+    const where = await this.visibleWhere(user);
+    const [rows, cats] = await Promise.all([
+      this.prisma.knowledgeItem.findMany({
+        where: { AND: [where, { type: kind }] },
+        select: { categoryId: true },
+      }),
+      this.prisma.knowledgeCategory.findMany({
+        where: { archivedAt: null },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      }),
+    ]);
+
+    const parentOf = new Map(cats.map((c) => [c.id, c.parentId]));
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      if (!r.categoryId) continue;
+      const root = parentOf.get(r.categoryId) ?? r.categoryId;
+      counts.set(root, (counts.get(root) ?? 0) + 1);
+    }
+    return cats
+      .filter((c) => !c.parentId && counts.has(c.id))
+      .map((c) => ({ id: c.id, name: c.name, icon: c.icon, count: counts.get(c.id) ?? 0 }));
   }
 }
