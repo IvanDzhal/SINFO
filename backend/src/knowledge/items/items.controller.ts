@@ -43,6 +43,12 @@ export class ItemsController {
   }
 
   @Permissions('knowledge.view')
+  @Get('search')
+  search(@Req() req: any, @Query('q') q?: string) {
+    return this.service.search(req.user, q ?? '');
+  }
+
+  @Permissions('knowledge.view')
   @Get(':id/similar')
   similar(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {
     return this.service.similar(req.user, id);
