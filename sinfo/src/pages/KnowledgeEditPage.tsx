@@ -348,6 +348,7 @@ export default function KnowledgeEditPage() {
               initialContent={initialContent}
               theme={theme}
               editable={!archived}
+              allowUpload={can('knowledge.manage_files')}
               onChange={(blocks) => {
                 contentRef.current = blocks
                 contentDirty.current = true

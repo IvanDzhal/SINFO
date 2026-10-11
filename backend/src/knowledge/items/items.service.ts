@@ -292,4 +292,12 @@ export class ItemsService {
     if (!v) throw new NotFoundException('Версію не знайдено');
     return v;
   }
+
+  async canAccess(user: Viewer, itemId: string): Promise<boolean> {
+    const found = await this.prisma.knowledgeItem.findFirst({
+      where: await this.accessibleWhere(user, itemId),
+      select: { id: true },
+    });
+    return !!found;
+  }
 }

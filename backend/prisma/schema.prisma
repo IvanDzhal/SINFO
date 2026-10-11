@@ -44,6 +44,7 @@ model User {
   knowledgeItems KnowledgeItem[]
   knowledgeReads KnowledgeRead[]
   knowledgeVersions KnowledgeVersion[]
+  knowledgeFiles KnowledgeFile[]
 }
 
 model Role {
@@ -210,6 +211,7 @@ model KnowledgeItem {
   visibility         KnowledgeVisibility[]
   reads              KnowledgeRead[]
   versions KnowledgeVersion[]
+  files KnowledgeFile[]
 
   @@index([type, status])
 }
@@ -248,4 +250,20 @@ model KnowledgeVersion {
   author      User          @relation(fields: [authorId], references: [id])
 
   @@unique([itemId, version])
+}
+
+model KnowledgeFile {
+  id           String         @id @default(uuid())
+  key          String         @unique
+  originalName String
+  mimeType     String
+  size         Int
+  kind         String
+  itemId       String?
+  item         KnowledgeItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  uploadedById String
+  uploadedBy   User           @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime       @default(now())
+
+  @@index([itemId])
 }

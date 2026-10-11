@@ -3,16 +3,19 @@ import { BlockNoteView } from '@blocknote/mantine'
 import * as locales from '@blocknote/core/locales'
 import '@blocknote/core/fonts/inter.css'
 import '@blocknote/mantine/style.css'
+import { resolveFileUrl, uploadFile } from '@/utils/fileUrl'
 
 export default function RichEditor({
   initialContent,
   theme,
   editable = true,
+  allowUpload = false,
   onChange,
 }: {
   initialContent: unknown
   theme: 'light' | 'dark'
   editable?: boolean
+  allowUpload?: boolean
   onChange: (blocks: unknown) => void
 }) {
   const editor = useCreateBlockNote({
@@ -21,6 +24,8 @@ export default function RichEditor({
         ? (initialContent as never)
         : undefined,
     dictionary: locales.uk,
+    resolveFileUrl,
+    uploadFile: allowUpload ? uploadFile : undefined,
   })
   return (
     <BlockNoteView

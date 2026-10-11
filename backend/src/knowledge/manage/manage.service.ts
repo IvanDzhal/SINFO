@@ -163,6 +163,7 @@ export class ManageService {
     if (rules) data.visibility = { deleteMany: {}, create: rules };
 
     const updated = await this.prisma.knowledgeItem.update({ where: { id }, data });
+    if (contentChanged) await this.linkFiles(id, incoming, user.id);
     if (bump) await this.snapshot(updated, user.id);
 
     await this.audit.log(user.id, 'knowledge_item.updated', 'KnowledgeItem', id, {
@@ -327,5 +328,17 @@ export class ManageService {
     }
     if (user.storeId) return [{ kind: 'STORE' as const, targetId: user.storeId }];
     return [];
+  }
+
+  private async linkFiles(itemId: string, content: unknown, uploaderId: string) {
+    if (content === undefined || content === null) return;
+    const ids = [...JSON.stringify(content).matchAll(/sinfo:\/\/file\/([0-9a-f-]{36})/g)].map(
+      (m) => m[1],
+    );
+    if (ids.length === 0) return;
+    await this.prisma.knowledgeFile.updateMany({
+      where: { id: { in: [...new Set(ids)] }, itemId: null, uploadedById: uploaderId },
+      data: { itemId },
+    });
   }
 }
