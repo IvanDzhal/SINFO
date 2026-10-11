@@ -39,9 +39,6 @@ coverage/
 Thumbs.db
 *.swp
 
-# Docker
-docker-compose.yml*
-
 # Prisma skills (якщо не хочеш їх у репо — обери)
 .claude/
 .cursor/
@@ -52,3 +49,5 @@ docker-compose.yml*
 .cache/
 .temp/
 tmp/
+
+docker-compose.override.yml
