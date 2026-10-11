@@ -24,6 +24,7 @@ interface Item {
   updatedAt: string
   isRead?: boolean
   category: Category | null
+  slug: string | null
 }
 
 const TEXT: Record<ItemType, { title: string; subtitle: string }> = {
@@ -200,7 +201,7 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
           return (
             <Link
               key={i.id}
-              to={isPublished ? `/knowledge/${i.id}` : `/knowledge/${i.id}/edit`}
+              to={isPublished ? `/knowledge/${i.slug ?? i.id}` : `/knowledge/${i.slug ?? i.id}/edit`}
               className="flex items-center gap-3 border-t border-border px-4 py-3 first:border-t-0 hover:bg-surface-2"
             >
               <span

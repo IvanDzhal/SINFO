@@ -9,6 +9,7 @@ interface Result {
   title: string
   description: string
   category: { name: string } | null
+  slug: string | null
 }
 
 const TYPE_LABEL = { instruction: 'Інструкція', material: 'Матеріал', news: 'Новина' }
@@ -74,7 +75,7 @@ export default function SearchBox() {
           {results.map((r) => (
             <Link
               key={r.id}
-              to={`/knowledge/${r.id}`}
+              to={`/knowledge/${r.slug ?? r.id}`}
               className="block border-t border-border px-4 py-2.5 first:border-t-0 hover:bg-surface-2"
             >
               <p className="truncate text-sm font-medium">{r.title}</p>

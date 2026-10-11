@@ -27,12 +27,14 @@ interface Article {
   isRead: boolean
   readToken: string
   canManage: boolean
+  slug: string | null
 }
 
 interface Similar {
   id: string
   title: string
   readingTimeMinutes: number
+  slug: string | null
 }
 
 interface Block {
@@ -88,7 +90,12 @@ export default function KnowledgeArticlePage() {
     window.scrollTo({ top: 0 })
     api
       .get<Article>(`/knowledge/items/${id}`)
-      .then((r) => setArticle(r.data))
+      .then((r) => {
+        setArticle(r.data)
+        if (r.data.slug && r.data.slug !== id) {
+          window.history.replaceState(null, '', `/knowledge/${r.data.slug}`)
+        }
+      })
       .catch(() => setError('Матеріал не знайдено або у вас немає доступу'))
   }, [id])
 
@@ -169,7 +176,7 @@ export default function KnowledgeArticlePage() {
             <div className="flex gap-2">
               {article.canManage && (
                 <Link
-                  to={`/knowledge/${article.id}/edit`}
+                  to={`/knowledge/${article.slug ?? article.id}/edit`}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm hover:bg-surface-2"
                 >
                   <Pencil size={14} /> Редагувати
@@ -246,7 +253,7 @@ export default function KnowledgeArticlePage() {
               </p>
               <div className="space-y-2 text-sm">
                 {similar.data.map((s) => (
-                  <Link key={s.id} to={`/knowledge/${s.id}`} className="block hover:text-accent">
+                  <Link key={s.id} to={`/knowledge/${s.slug ?? s.id}`} className="block hover:text-accent">
                     <p>{s.title}</p>
                     <p className="text-xs text-muted">{s.readingTimeMinutes} хв</p>
                   </Link>

@@ -209,8 +209,11 @@ export default function KnowledgeEditPage() {
       if (vis) body.visibility = vis
       if (isNew || contentDirty.current) body.content = contentRef.current
       if (isNew) {
-        const r = await api.post<{ id: string }>('/knowledge/manage/items', { ...body, type })
-        return r.data.id
+        const r = await api.post<{ id: string; slug: string | null }>(
+          '/knowledge/manage/items',
+          { ...body, type },
+        )
+        return r.data.slug ?? r.data.id
       }
       const r = await api.patch<{ version: number }>(`/knowledge/manage/items/${id}`, body)
       setVersion(r.data.version)

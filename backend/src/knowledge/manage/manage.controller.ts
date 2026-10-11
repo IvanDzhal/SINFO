@@ -15,6 +15,7 @@ import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
 import { ManageService } from './manage.service';
 import { CreateItemDto, UpdateItemDto } from './dto/item.dto';
+import { ItemKeyPipe } from '../item-key.pipe';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('knowledge/manage')
@@ -35,7 +36,7 @@ export class ManageController {
 
   @Permissions('knowledge.edit')
   @Get('items/:id')
-  get(@Req() req: any, @Param('id') id: string) {
+  get(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {
     return this.service.getForEdit(req.user, id);
   }
 
@@ -47,31 +48,31 @@ export class ManageController {
 
   @Permissions('knowledge.edit')
   @Patch('items/:id')
-  update(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateItemDto) {
+  update(@Req() req: any, @Param('id', ItemKeyPipe) id: string, @Body() dto: UpdateItemDto) {
     return this.service.update(req.user, id, dto);
   }
 
   @Permissions('knowledge.publish')
   @Post('items/:id/publish')
-  publish(@Req() req: any, @Param('id') id: string) {
+  publish(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {
     return this.service.publish(req.user, id);
   }
 
   @Permissions('knowledge.archive')
   @Post('items/:id/archive')
-  archive(@Req() req: any, @Param('id') id: string) {
+  archive(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {
     return this.service.archive(req.user, id);
   }
 
   @Permissions('knowledge.archive')
   @Post('items/:id/restore')
-  restore(@Req() req: any, @Param('id') id: string) {
+  restore(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {
     return this.service.restore(req.user, id);
   }
 
   @Permissions('knowledge.delete')
   @Delete('items/:id')
-  remove(@Req() req: any, @Param('id') id: string) {
+  remove(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {
     return this.service.remove(req.user, id);
   }
 }

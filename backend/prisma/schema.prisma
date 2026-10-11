@@ -212,6 +212,7 @@ model KnowledgeItem {
   reads              KnowledgeRead[]
   versions KnowledgeVersion[]
   files KnowledgeFile[]
+  slug               String?             @unique
 
   @@index([type, status])
 }

@@ -91,6 +91,7 @@ function Card({ to, title, text, icon: Icon, soon }: HomeCard) {
     isRequired: boolean
     publishedAt: string | null
     author: { firstName: string; lastName: string }
+    slug: string | null
   }
 
   const TYPE_LABEL: Record<Latest['type'], string> = {
@@ -125,7 +126,7 @@ function Card({ to, title, text, icon: Icon, soon }: HomeCard) {
           return (
             <Link
               key={i.id}
-              to={`/knowledge/${i.id}`}
+              to={`/knowledge/${i.slug ?? i.id}`}
               className="flex items-center gap-3 border-t border-border px-4 py-3 hover:bg-surface-2"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">

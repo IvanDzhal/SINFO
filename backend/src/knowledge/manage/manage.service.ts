@@ -7,6 +7,7 @@ import {
 import { KnowledgeStatus, KnowledgeType, Prisma, VisibilityKind } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
+import { uniqueSlug } from '../slug';
 import {
   Actor,
   authorWhere,
@@ -40,6 +41,7 @@ export class ManageService {
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true,
+        slug: true,
         type: true,
         title: true,
         description: true,
@@ -115,6 +117,12 @@ export class ManageService {
     const incoming = dto.content ?? undefined;
     const text = extractText(incoming);
 
+    const slug = await uniqueSlug(
+      async (s) =>
+        !!(await this.prisma.knowledgeItem.findUnique({ where: { slug: s }, select: { id: true } })),
+      dto.title,
+    );
+
     const item = await this.prisma.knowledgeItem.create({
       data: {
         type: dto.type,
@@ -127,13 +135,14 @@ export class ManageService {
         isRequired: !!dto.isRequired,
         readingTimeMinutes: readingTime(text),
         visibility: { create: rules },
+        slug,
       },
     });
     await this.audit.log(user.id, 'knowledge_item.created', 'KnowledgeItem', item.id, {
       title: item.title,
       type: item.type,
     });
-    return { id: item.id, status: item.status, version: item.version };
+    return { id: item.id, slug: item.slug, status: item.status, version: item.version };
   }
 
   async update(user: Actor, id: string, dto: UpdateItemDto) {

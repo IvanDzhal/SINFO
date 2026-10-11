@@ -75,6 +75,7 @@ export class ItemsService {
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true,
+        slug: true,
         type: true,
         title: true,
         description: true,
@@ -96,6 +97,7 @@ export class ItemsService {
       take: Math.min(Math.max(limit || 6, 1), 20),
       select: {
         id: true,
+        slug: true,
         type: true,
         title: true,
         isRequired: true,
@@ -187,7 +189,7 @@ export class ItemsService {
       },
       orderBy: { updatedAt: 'desc' },
       take: 4,
-      select: { id: true, title: true, readingTimeMinutes: true },
+      select: { id: true, slug: true, title: true, readingTimeMinutes: true },
     });
   }
 
@@ -212,6 +214,7 @@ export class ItemsService {
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true,
+        slug: true,
         type: true,
         title: true,
         description: true,

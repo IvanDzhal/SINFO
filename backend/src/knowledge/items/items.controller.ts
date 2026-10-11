@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
 import { ItemsService } from './items.service';
+import { ItemKeyPipe } from '../item-key.pipe';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('knowledge/items')
@@ -43,31 +44,31 @@ export class ItemsController {
 
   @Permissions('knowledge.view')
   @Get(':id/similar')
-  similar(@Req() req: any, @Param('id') id: string) {
+  similar(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {
     return this.service.similar(req.user, id);
   }
 
   @Permissions('knowledge.view')
   @Get(':id')
-  get(@Req() req: any, @Param('id') id: string) {
+  get(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {
     return this.service.get(req.user, id);
   }
 
   @Permissions('knowledge.view')
   @Post(':id/read')
-  markRead(@Req() req: any, @Param('id') id: string, @Body('token') token: string) {
+  markRead(@Req() req: any, @Param('id', ItemKeyPipe) id: string, @Body('token') token: string) {
     return this.service.markRead(req.user, id, token);
   }
 
   @Permissions('knowledge.view_versions')
   @Get(':id/versions')
-  versions(@Req() req: any, @Param('id') id: string) {
+  versions(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {
     return this.service.versions(req.user, id);
   }
 
   @Permissions('knowledge.view_versions')
   @Get(':id/versions/:version')
-  version(@Req() req: any, @Param('id') id: string, @Param('version') version: string) {
+  version(@Req() req: any, @Param('id', ItemKeyPipe) id: string, @Param('version') version: string) {
     const n = Number(version);
     if (!Number.isInteger(n)) throw new BadRequestException('Невірна версія');
     return this.service.version(req.user, id, n);
