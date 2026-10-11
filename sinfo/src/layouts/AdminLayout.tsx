@@ -14,6 +14,7 @@ import {
   Users,
   X,
   FolderTree,
+  ArrowLeft,
   type LucideIcon,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -110,6 +111,15 @@ const can = useCan()
             <X size={20} />
           </button>
         </div>
+        <div className="px-3 pb-2">
+          <Link
+            to="/"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm text-muted hover:bg-surface-2 hover:text-ink"
+          >
+            <ArrowLeft size={16} /> До порталу
+          </Link>
+        </div>
         <nav className="px-3 pb-3">
           {visibleNav.map((group) =>(
             <div key={group.group} className="mb-4">
@@ -145,7 +155,7 @@ const can = useCan()
           <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Відкрити меню">
             <Menu size={22} />
           </button>
-          <Link to="/" className="hidden text-sm text-muted hover:text-ink lg:block">← До порталу</Link>
+          <div className="hidden lg:block" />
           <div className="flex items-center gap-3">
             <button
               onClick={toggle}
