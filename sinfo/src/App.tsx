@@ -19,11 +19,11 @@ import CategoriesPage from '@/pages/admin/CategoriesPage'
 import KnowledgeListPage from '@/pages/KnowledgeListPage'
 import KnowledgeArticlePage from '@/pages/KnowledgeArticlePage'
 import KnowledgeEditPage from '@/pages/KnowledgeEditPage'
+import TestingPage from '@/pages/TestingPage'
 
 const stubs = [
   { path: 'about', title: 'Про компанію' },
   { path: 'training', title: 'Навчання' },
-  { path: 'testing', title: 'Тестування' },
   { path: 'analytics', title: 'Аналітика' },
   { path: 'extra-sales', title: 'Додаткові продажі' },
   { path: 'profile', title: 'Профіль' },
@@ -38,6 +38,7 @@ function App() {
           <Route element={<UserLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="instructions" element={<KnowledgeListPage key="instruction" type="instruction" />} />
+            <Route path="testing" element={<TestingPage />} />
             <Route path="news" element={<KnowledgeListPage key="news" type="news" />} />
             <Route path="materials" element={<KnowledgeListPage key="material" type="material" />} />
             <Route path="knowledge/:id" element={<KnowledgeArticlePage />} />

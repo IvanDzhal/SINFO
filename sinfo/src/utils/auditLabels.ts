@@ -31,6 +31,12 @@ const LABELS: Record<string, string> = {
   'knowledge_item.archived': 'Архівовано матеріал',
   'knowledge_item.restored': 'Відновлено матеріал',
   'knowledge_item.deleted': 'Видалено чернетку',
+  'test.created': 'Створено тест',
+  'test.updated': 'Змінено тест',
+  'test.published': 'Опубліковано тест',
+  'test.archived': 'Архівовано тест',
+  'test.restored': 'Відновлено тест',
+  'test.deleted': 'Видалено чернетку тесту',
 }
 
 export function actionLabel(code: string) {

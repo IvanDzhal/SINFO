@@ -27,7 +27,6 @@ model User {
   lastName            String
   status              UserStatus @default(active)
   position            String?
-  employmentStartDate DateTime?
   regionId            String?
   cityId              String?
   storeId             String?
@@ -46,6 +45,7 @@ model User {
   knowledgeVersions KnowledgeVersion[]
   knowledgeFiles KnowledgeFile[]
   notifications Notification[]
+  createdTests Test[]
 }
 
 model Role {
@@ -168,6 +168,7 @@ model KnowledgeCategory {
   archivedAt DateTime?
   createdAt  DateTime            @default(now())
   items KnowledgeItem[]
+  tests Test[]
 }
 
 enum KnowledgeType {
@@ -214,6 +215,7 @@ model KnowledgeItem {
   versions KnowledgeVersion[]
   files KnowledgeFile[]
   slug               String?             @unique
+  tests Test[]
 
   @@index([type, status])
 }
@@ -285,4 +287,84 @@ model Notification {
   @@unique([userId, itemId, kind])
   @@index([userId, readAt])
   @@index([userId, createdAt])
+}
+
+enum TestStatus {
+  draft
+  published
+  archived
+}
+
+enum QuestionType {
+  single
+  multiple
+  matching
+  input
+}
+
+enum Difficulty {
+  easy
+  medium
+  hard
+}
+
+model Test {
+  id                  String             @id @default(uuid())
+  title               String
+  description         String             @default("")
+  categoryId          String?
+  category            KnowledgeCategory? @relation(fields: [categoryId], references: [id])
+  linkedItemId        String?
+  linkedItem          KnowledgeItem?     @relation(fields: [linkedItemId], references: [id], onDelete: SetNull)
+  status              TestStatus         @default(draft)
+  isRequired          Boolean            @default(false)
+  deadline            DateTime?
+  questionCount       Int                @default(20)
+  timeLimitMinutes    Int                @default(25)
+  passingScorePercent Int                @default(80)
+  maxAttempts         Int                @default(2)
+  createdById         String
+  createdBy           User               @relation(fields: [createdById], references: [id])
+  publishedAt         DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  questions           TestQuestion[]
+  visibility          TestVisibility[]
+
+  @@index([status])
+}
+
+model TestVisibility {
+  id       String         @id @default(uuid())
+  testId   String
+  kind     VisibilityKind
+  targetId String?
+  test     Test           @relation(fields: [testId], references: [id], onDelete: Cascade)
+}
+
+model TestQuestion {
+  id          String       @id @default(uuid())
+  testId      String
+  type        QuestionType
+  text        String
+  explanation String       @default("")
+  difficulty  Difficulty   @default(medium)
+  points      Int          @default(2)
+  position    Int          @default(0)
+  accepted    Json?
+  archivedAt  DateTime?
+  test        Test         @relation(fields: [testId], references: [id], onDelete: Cascade)
+  options     TestOption[]
+
+  @@index([testId])
+}
+
+model TestOption {
+  id         String       @id @default(uuid())
+  questionId String
+  label      String
+  matchLabel String?
+  isCorrect  Boolean      @default(false)
+  position   Int          @default(0)
+  question   TestQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }

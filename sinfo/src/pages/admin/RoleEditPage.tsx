@@ -68,6 +68,13 @@ const ACTION_LABEL: Record<string, string> = {
   view_read_status: 'Статус прочитання',
   manage_visibility: 'Керування видимістю',
   create_embed: 'HTML-вставки',
+  start: 'Проходження тестів',
+  view_answers: 'Перегляд відповідей',
+  view_attempts: 'Перегляд спроб',
+  view_analytics: 'Аналітика тестів',
+  manage_deadlines: 'Керування дедлайнами',
+  manage_required: "Обов'язкові тести",
+  manage_questions: 'Керування питаннями',
 }
 
 const selectClass =
