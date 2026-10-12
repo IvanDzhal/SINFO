@@ -7,6 +7,8 @@ import Button from '@/components/Button'
 import { Input } from '@/components/Field'
 import { useCan } from '@/hooks/useCan'
 import { getErrorMessage } from '@/utils/errors'
+import QuestionsPanel from '@/components/QuestionsPanel'
+import type { Question } from '@/components/QuestionEditor'
 
 type Status = 'draft' | 'published' | 'archived'
 type Kind = 'GLOBAL' | 'REGION' | 'STORE' | 'ROLE' | 'BRAND'
@@ -28,13 +30,6 @@ interface Rule {
   kind: Kind
   targetId: string | null
 }
-interface QuestionRow {
-  id: string
-  type: 'single' | 'multiple' | 'matching' | 'input'
-  text: string
-  points: number
-  errors: string[]
-}
 interface TestData {
   id: string
   title: string
@@ -49,15 +44,7 @@ interface TestData {
   passingScorePercent: number
   maxAttempts: number
   visibility: Rule[]
-  questions: QuestionRow[]
   errors: string[]
-}
-
-const TYPE_LABEL: Record<QuestionRow['type'], string> = {
-  single: 'Один варіант',
-  multiple: 'Декілька варіантів',
-  matching: 'Відповідність',
-  input: 'Число / текст',
 }
 
 const STATUS_LABEL: Record<Status, string> = {
@@ -218,7 +205,7 @@ export default function TestEditorDrawer({
   const [storeIds, setStoreIds] = useState<string[]>([])
   const [brandIds, setBrandIds] = useState<string[]>([])
   const [roleIds, setRoleIds] = useState<string[]>([])
-  const [questions, setQuestions] = useState<QuestionRow[]>([])
+  const [questions, setQuestions] = useState<Question[]>([])
   const [errors, setErrors] = useState<string[]>([])
 
   const [dirty, setDirty] = useState(false)
@@ -251,7 +238,7 @@ export default function TestEditorDrawer({
     setStoreIds(pick('STORE'))
     setBrandIds(pick('BRAND'))
     setRoleIds(pick('ROLE'))
-    setQuestions(t.questions)
+    setQuestions(t.questions ?? [])
     setErrors(t.errors)
   }
 
@@ -729,30 +716,20 @@ export default function TestEditorDrawer({
               <Section title="Питання">
                 {!id ? (
                   <p className="text-sm text-muted">
-                    Збережіть тест, щоб додавати питання (редактор питань на наступному кроці).
+                    Збережіть тест, щоб додавати питання.
                   </p>
-                ) : questions.length === 0 ? (
-                  <p className="text-sm text-muted">Питань поки немає.</p>
                 ) : (
-                  <div>
-                    {questions.map((q, i) => (
-                      <div
-                        key={q.id}
-                        className="flex items-start gap-3 border-t border-border py-2 first:border-t-0"
-                      >
-                        <span className="w-6 shrink-0 text-sm text-muted">{i + 1}.</span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm">{q.text || '(без тексту)'}</p>
-                          <p className="text-xs text-muted">
-                            {TYPE_LABEL[q.type]} · {q.points} бал.
-                          </p>
-                        </div>
-                        {q.errors.length > 0 && (
-                          <span className="shrink-0 text-xs text-danger">{q.errors.length} помилок</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <QuestionsPanel
+                    testId={id}
+                    status={status}
+                    needed={Number(questionCount) || 20}
+                    questions={questions}
+                    canEdit={!archived && can('testing.manage_questions')}
+                    onChanged={() => {
+                      reload(id).catch(() => {})
+                      onChanged()
+                    }}
+                  />
                 )}
               </Section>
 
