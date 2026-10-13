@@ -22,6 +22,8 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { useThemeStore } from '@/store/useThemeStore'
 import { useCan } from '@/hooks/useCan'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
+import { useMyAvatar } from '@/hooks/useMyAvatar'
+import Avatar from '@/components/Avatar'
 import logo from '../assets/SINFO_LOGO.png';
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
@@ -77,7 +79,7 @@ export default function AdminLayout() {
   useHeartbeat()
   const { theme, toggle } = useThemeStore()
   const [open, setOpen] = useState(false)
-  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`
+  const avatar = useMyAvatar()
 
 const can = useCan()
   const visibleNav = nav
@@ -165,9 +167,7 @@ const can = useCan()
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <div className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pl-1 pr-3 text-sm">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-soft text-xs font-medium text-accent">
-                {initials}
-              </span>
+              <Avatar firstName={user?.firstName ?? ''} lastName={user?.lastName ?? ''} url={avatar} size="sm" />
               <span className="hidden sm:inline">
                 {user?.firstName} {user?.lastName}
               </span>

@@ -1,3 +1,4 @@
+import Avatar from '@/components/Avatar'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -225,6 +226,7 @@ interface OnlineUser {
   id: string
   firstName: string
   lastName: string
+  avatarUrl: string | null
   store: string | null
   region: string | null
 }
@@ -261,9 +263,8 @@ function OnlineCard() {
       )}
       {users.map((u) => (
         <div key={u.id} className="flex items-center gap-3 border-t border-border px-4 py-2.5">
-          <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-medium text-accent">
-            {u.firstName[0]}
-            {u.lastName[0]}
+          <span className="relative shrink-0">
+            <Avatar firstName={u.firstName} lastName={u.lastName} url={u.avatarUrl} />
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-success" />
           </span>
           <div className="min-w-0">

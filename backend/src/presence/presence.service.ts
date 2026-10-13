@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AvatarService } from '../profile/avatar.service';
 import { kyivDay } from './day.util';
 
 @Injectable()
@@ -7,7 +8,7 @@ export class PresenceService {
   // Останній записаний день активності по користувачу, щоб не писати в БД на кожен ping
   private lastDay = new Map<string, number>();
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private avatars: AvatarService) {}
 
   async heartbeat(userId: string) {
     const now = new Date();
@@ -38,6 +39,8 @@ export class PresenceService {
             id: true,
             firstName: true,
             lastName: true,
+            avatarKey: true,
+            avatarUpdatedAt: true,
             store: { select: { name: true } },
             region: { select: { name: true } },
           },
@@ -48,6 +51,7 @@ export class PresenceService {
       id: r.user.id,
       firstName: r.user.firstName,
       lastName: r.user.lastName,
+      avatarUrl: this.avatars.link(r.user),
       store: r.user.store?.name ?? null,
       region: r.user.region?.name ?? null,
     }));
