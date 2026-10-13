@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Megaphone } from 'lucide-react'
+import { Bell, ClipboardCheck, Megaphone } from 'lucide-react'
 import clsx from 'clsx'
 import { api } from '@/services/api'
 
@@ -119,7 +119,7 @@ export default function NotificationsBell() {
                 )}
               >
                 <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
-                  <Megaphone size={16} />
+                  {n.kind.startsWith('test') ? <ClipboardCheck size={16} /> : <Megaphone size={16} />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{n.title}</span>

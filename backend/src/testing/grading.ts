@@ -147,3 +147,56 @@ export function normalizeAnswer(
     }
   }
 }
+
+const byPosition = (options: Opt[]) => [...options].sort((a, b) => a.position - b.position);
+
+// Відповідь користувача текстом (для перегляду керівником)
+export function describeAnswer(q: GradedQuestion, attemptId: string, answer: unknown): string {
+  if (answer === null || answer === undefined || answer === '') return '— (без відповіді)';
+  const opts = byPosition(q.options);
+
+  switch (q.type) {
+    case 'single':
+      return opts.find((o) => o.id === answer)?.label ?? '—';
+    case 'multiple':
+      return Array.isArray(answer)
+        ? opts
+            .filter((o) => answer.includes(o.id))
+            .map((o) => o.label)
+            .join('; ') || '—'
+        : '—';
+    case 'matching': {
+      const map = (
+        typeof answer === 'object' && !Array.isArray(answer) ? answer : {}
+      ) as Record<string, unknown>;
+      return opts
+        .map((o) => {
+          const right = opts.find((x) => rightToken(attemptId, x.id) === map[o.id]);
+          return `${o.label} → ${right?.matchLabel ?? '—'}`;
+        })
+        .join('\n');
+    }
+    default:
+      return typeof answer === 'string' ? answer : String(answer);
+  }
+}
+
+export function describeCorrect(q: GradedQuestion): string {
+  const opts = byPosition(q.options);
+  switch (q.type) {
+    case 'single':
+    case 'multiple':
+      return opts
+        .filter((o) => o.isCorrect)
+        .map((o) => o.label)
+        .join('; ');
+    case 'matching':
+      return opts.map((o) => `${o.label} → ${o.matchLabel ?? ''}`).join('\n');
+    default: {
+      const acc = parseAccepted(q.accepted);
+      if (!acc) return '—';
+      const tol = acc.kind === 'number' && acc.tolerance ? ` (± ${acc.tolerance})` : '';
+      return `${acc.answers.join(' / ')}${tol}`;
+    }
+  }
+}

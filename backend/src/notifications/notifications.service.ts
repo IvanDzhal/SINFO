@@ -105,4 +105,24 @@ export class NotificationsService {
     }
     return { AND: and };
   }
+
+  // Сповіщення вказаним користувачам (дублі за користувач + сутність + тип пропускаються)
+  async notifyUsers(
+    userIds: string[],
+    n: { kind: string; title: string; body?: string; link: string; itemId: string },
+  ) {
+    if (userIds.length === 0) return 0;
+    const res = await this.prisma.notification.createMany({
+      data: userIds.map((userId) => ({
+        userId,
+        kind: n.kind,
+        title: n.title,
+        body: n.body ?? '',
+        link: n.link,
+        itemId: n.itemId,
+      })),
+      skipDuplicates: true,
+    });
+    return res.count;
+  }
 }

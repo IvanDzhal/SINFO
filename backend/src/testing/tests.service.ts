@@ -10,7 +10,13 @@ import { AuditService } from '../audit/audit.service';
 import { Actor, regionIdsOf, scopesFor } from '../knowledge/helpers';
 import { CreateTestDto, UpdateTestDto } from './dto/test.dto';
 import { toQuestionData, validateQuestion, validateTest } from './validation';
-import { resolveAssignment, testAuthorWhere, testVisibleWhere } from './visibility';
+import {
+  assignedUsersWhere,
+  resolveAssignment,
+  testAuthorWhere,
+  testVisibleWhere,
+} from './visibility';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AttemptsService } from './attempts.service';
 
 @Injectable()
@@ -19,6 +25,7 @@ export class TestsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private attempts: AttemptsService,
+    private notifications: NotificationsService,
   ) {}
 
   // Опубліковані тести, призначені користувачу
@@ -219,6 +226,24 @@ export class TestsService {
       data: { status: 'published', publishedAt: new Date() },
     });
     await this.audit.log(user.id, 'test.published', 'Test', id, { title: test.title });
+    // сповіщення призначеним працівникам (крім автора)
+    const assignees = await this.prisma.user.findMany({
+      where: { AND: [assignedUsersWhere(test.visibility), { id: { not: user.id } }] },
+      select: { id: true },
+    });
+    await this.notifications
+      .notifyUsers(
+        assignees.map((u) => u.id),
+        {
+          kind: test.isRequired ? 'test_required' : 'test_assigned',
+          title: test.isRequired
+            ? `Новий обов'язковий тест: ${test.title}`
+            : `Вам призначено новий тест: ${test.title}`,
+          link: `/testing/${id}`,
+          itemId: id,
+        },
+      )
+      .catch(() => 0);
     return { id, status: 'published' };
   }
 

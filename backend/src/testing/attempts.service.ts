@@ -7,10 +7,11 @@ import { gradeAnswer, normalizeAnswer, pickRandom, rightToken, seededShuffle } f
 import { computeStatus } from './status';
 import { parseAccepted, toQuestionData, validateQuestion } from './validation';
 import { testVisibleWhere } from './visibility';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AttemptsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private notifications: NotificationsService) {}
 
   // Додає до списку тестів статус користувача, спроби й найкращий результат
   async decorate<T extends { id: string; deadline: Date | null; maxAttempts: number }>(
@@ -272,11 +273,20 @@ export class AttemptsService {
   }
 
   // Оцінює спробу на сервері. Правильні відповіді нікуди не віддаються.
+  async finalizeAllExpired() {
+    const expired = await this.prisma.testAttempt.findMany({
+      where: { status: 'in_progress', expiresAt: { lte: new Date() } },
+      select: { id: true },
+    });
+    for (const a of expired) await this.finalizeById(a.id, true);
+  }
+
+  // Оцінює спробу на сервері. Правильні відповіді нікуди не віддаються.
   async finalizeById(attemptId: string, timedOut: boolean) {
     const attempt = await this.prisma.testAttempt.findUnique({
       where: { id: attemptId },
       include: {
-        test: { select: { passingScorePercent: true } },
+        test: { select: { title: true, passingScorePercent: true } },
         answers: { select: { questionId: true, answer: true } },
       },
     });
@@ -313,6 +323,7 @@ export class AttemptsService {
     const passed = maxScore > 0 && score * 100 >= attempt.test.passingScorePercent * maxScore;
     const completedAt = timedOut ? attempt.expiresAt : new Date();
 
+    const done = { value: false };
     await this.prisma.$transaction(async (tx) => {
       const res = await tx.testAttempt.updateMany({
         where: { id: attemptId, status: 'in_progress' },
@@ -327,6 +338,7 @@ export class AttemptsService {
         },
       });
       if (res.count === 0) return; // вже завершено паралельним запитом
+      done.value = true;
 
       for (const r of rows) {
         await tx.testAnswer.upsert({
@@ -342,6 +354,20 @@ export class AttemptsService {
         });
       }
     });
+
+    if (done.value) {
+      await this.notifications
+        .notifyUsers([attempt.userId], {
+          kind: passed ? 'test_passed' : 'test_failed',
+          title: passed
+            ? `Тест пройдено: ${attempt.test.title}`
+            : `Тест не пройдено: ${attempt.test.title}`,
+          body: `Результат: ${Math.floor(percent)}%`,
+          link: `/testing/attempt/${attemptId}`,
+          itemId: attemptId,
+        })
+        .catch(() => 0);
+    }
   }
 
   // ---------- допоміжне ----------

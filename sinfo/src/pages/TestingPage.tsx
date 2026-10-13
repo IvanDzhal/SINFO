@@ -156,8 +156,37 @@ function ManageSection() {
 function AvailableSection() {
   const { data, loading, error } = useFetch<AvailableTest>('/testing/tests')
 
+  const scored = data.filter((t) => t.bestPercent !== null)
+  const average = scored.length
+    ? scored.reduce((sum, t) => sum + (t.bestPercent as number), 0) / scored.length
+    : null
+  const passed = data.filter((t) => t.myStatus === 'passed').length
+  const failed = data.filter((t) => t.myStatus === 'failed').length
+
   return (
     <div>
+      {data.length > 0 && (
+        <div className="mb-6 rounded-2xl border border-border bg-surface p-4">
+          <h3 className="mb-3 font-medium">Мої результати</h3>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl bg-surface-2 px-3 py-2">
+              <p className="text-xs text-muted">Середній результат</p>
+              <p className="text-xl font-semibold">
+                {average === null ? '—' : `${Math.floor(average)}%`}
+              </p>
+            </div>
+            <div className="rounded-xl bg-surface-2 px-3 py-2">
+              <p className="text-xs text-muted">Пройдено</p>
+              <p className="text-xl font-semibold">{passed}</p>
+            </div>
+            <div className="rounded-xl bg-surface-2 px-3 py-2">
+              <p className="text-xs text-muted">Не пройдено</p>
+              <p className="text-xl font-semibold">{failed}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h3 className="mb-3 text-lg font-semibold">Доступні тести</h3>
       {loading && <p className="text-muted">Завантаження...</p>}
       {error && <p className="text-danger">{error}</p>}
@@ -226,8 +255,20 @@ export default function TestingPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold">Тестування</h2>
-      <p className="mb-5 text-sm text-muted">Перевірка знань та результати</p>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">Тестування</h2>
+          <p className="text-sm text-muted">Перевірка знань та результати</p>
+        </div>
+        {can('testing.view_analytics') && (
+          <Link
+            to="/testing/analytics"
+            className="rounded-xl border border-border bg-surface px-4 py-2 text-sm hover:bg-surface-2"
+          >
+            Аналітика тестів
+          </Link>
+        )}
+      </div>
       {canManage && <ManageSection />}
       {showAvailable && <AvailableSection />}
     </div>

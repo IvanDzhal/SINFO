@@ -122,3 +122,62 @@ export async function resolveAssignment(
   if (!ok) throw new BadRequestException('Призначення виходить за межі вашого доступу');
   return rules;
 }
+
+// Користувачі, яким призначено тест: бачать його за правилами І мають право проходити
+export function assignedUsersWhere(
+  rules: { kind: string; targetId: string | null }[],
+): Prisma.UserWhereInput {
+  if (rules.length === 0) return { id: '__none__' };
+
+  const and: Prisma.UserWhereInput[] = [
+    { status: 'active' },
+    {
+      roles: {
+        some: {
+          role: {
+            archivedAt: null,
+            permissions: { some: { permission: { code: 'testing.start' } } },
+          },
+        },
+      },
+    },
+  ];
+
+  if (!rules.some((r) => r.kind === 'GLOBAL')) {
+    const ids = (kind: string) =>
+      rules.filter((r) => r.kind === kind && r.targetId).map((r) => r.targetId as string);
+    const regions = ids('REGION');
+    const stores = ids('STORE');
+    const brands = ids('BRAND');
+    const roles = ids('ROLE');
+
+    const place: Prisma.UserWhereInput[] = [];
+    if (regions.length) {
+      place.push(
+        { regionId: { in: regions } },
+        { managedRegions: { some: { regionId: { in: regions } } } },
+      );
+    }
+    if (stores.length) place.push({ storeId: { in: stores } });
+    if (place.length) and.push({ OR: place });
+    if (brands.length) and.push({ store: { brandFormatId: { in: brands } } });
+    if (roles.length) {
+      and.push({ roles: { some: { roleId: { in: roles }, role: { archivedAt: null } } } });
+    }
+  }
+  return { AND: and };
+}
+
+// Яких працівників керівник може аналізувати (за його scope)
+export function userScopeWhere(scopes: Scope[], viewer: Actor): Prisma.UserWhereInput {
+  if (scopes.length === 0) return { id: '__none__' };
+  if (scopes.includes('GLOBAL')) return {};
+  const or: Prisma.UserWhereInput[] = [];
+  if (scopes.includes('SELF')) or.push({ id: viewer.id });
+  if (scopes.includes('STORE') && viewer.storeId) or.push({ storeId: viewer.storeId });
+  if (scopes.includes('REGION')) {
+    const ids = regionIdsOf(viewer);
+    if (ids.length) or.push({ regionId: { in: ids } });
+  }
+  return or.length > 0 ? { OR: or } : { id: '__none__' };
+}
