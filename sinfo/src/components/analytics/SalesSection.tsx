@@ -15,6 +15,14 @@ import {
   type Col,
   type Level,
 } from './ui'
+import {
+  ChartCard,
+  ColumnChart,
+  HBarChart,
+  LineChart,
+  type Column,
+  type Series,
+} from './charts'
 
 // ───────── типи відповіді API ─────────
 
@@ -120,7 +128,7 @@ interface StoreDetail {
   alerts: Alert[]
 }
 
-type Tab = 'stores' | 'regions' | 'ranking' | 'alerts'
+type Tab = 'stores' | 'regions' | 'ranking' | 'alerts' | 'year'
 
 // невеликий хук для одиночних запитів (useFetch працює лише з масивами)
 function useGet<T>(url: string | null) {
@@ -214,9 +222,15 @@ function MetricCard({ m }: { m: Named & MetricCell }) {
   )
 }
 
-function Overview({ query }: { query: string }) {
-  const { data: o, loading, error } = useGet<Overview>(`/analytics/sales/overview${query}`)
-
+function OverviewCards({
+  o,
+  loading,
+  error,
+}: {
+  o: Overview | null
+  loading: boolean
+  error: string
+}) {
   if (loading) return <p className="mb-6 text-muted">Завантаження...</p>
   if (error || !o) return <p className="mb-6 text-danger">{error || 'Немає даних'}</p>
 
@@ -262,6 +276,335 @@ function Overview({ query }: { query: string }) {
       <p className="mt-2 text-xs text-muted">
         Дані станом на {fmtDate(o.dataDate)}. Прогноз — за поточним темпом продажів.
       </p>
+    </div>
+  )
+}
+
+const ddmm = (d: string) => d.slice(5).split('-').reverse().join('.')
+
+// Діаграми головної сторінки: три, усі по окремих магазинах (без зведення по мережі)
+function SelectBox({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  options: { value: string; label: string }[]
+}) {
+  return (
+    <label className="text-xs text-muted">
+      {label}{' '}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="ml-1 rounded-lg border border-border bg-surface px-2 py-1 text-sm text-ink"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function ChartsPanel({
+  stores,
+  query,
+  onStore,
+}: {
+  stores: StoresResponse | null
+  query: string
+  onStore: (id: string) => void
+}) {
+  const [planCode, setPlanCode] = useState('TO')
+  const [effCode, setEffCode] = useState('')
+  const [storeId, setStoreId] = useState('')
+
+  const list = stores?.stores ?? []
+  const effDefs = stores?.efficiency ?? []
+  const selectedEff = effCode || effDefs[0]?.code || ''
+
+  // обраний для динаміки магазин: перший із даними, поки користувач не обрав сам
+  const withData = list.filter((s) => s.dataDate)
+  const activeStore = storeId || withData[0]?.id || ''
+  const detail = useGet<StoreDetail>(activeStore ? `/analytics/sales/stores/${activeStore}${query}` : null)
+
+  if (!stores) return null
+
+  const planBars = [...list]
+    .filter((s) => s.metrics[planCode]?.percent !== null && s.metrics[planCode]?.percent !== undefined)
+    .sort((a, b) => (b.metrics[planCode].percent ?? 0) - (a.metrics[planCode].percent ?? 0))
+  const effBars = [...list]
+    .filter((s) => s.efficiency[selectedEff]?.value !== null && s.efficiency[selectedEff]?.value !== undefined)
+    .sort((a, b) => (b.efficiency[selectedEff].value ?? 0) - (a.efficiency[selectedEff].value ?? 0))
+
+  const hist = detail.data?.history ?? []
+  const planSeries: Series[] = (detail.data?.metrics ?? []).map((m) => ({
+    name: m.shortName,
+    points: hist.map((h) => h.metrics[m.code]?.percent ?? null),
+  }))
+
+  return (
+    <div className="mb-6 grid gap-4 lg:grid-cols-2">
+      <ChartCard
+        title="Виконання плану по магазинах"
+        hint="Риска — прогноз на кінець місяця, лінія — 100% плану. Натисніть на магазин."
+      >
+        <div className="mb-3">
+          <SelectBox
+            label="Показник"
+            value={planCode}
+            onChange={setPlanCode}
+            options={stores.metrics.map((m) => ({ value: m.code, label: m.name }))}
+          />
+        </div>
+        <HBarChart
+          items={planBars.map((s) => ({
+            label: s.code ?? s.name,
+            value: s.metrics[planCode].percent,
+            level: s.metrics[planCode].level,
+            marker: s.metrics[planCode].forecastPercent,
+          }))}
+          max={Math.max(120, ...planBars.map((s) => s.metrics[planCode].forecastPercent ?? 0))}
+          refLine={100}
+          onClick={(i) => onStore(planBars[i].id)}
+        />
+      </ChartCard>
+
+      <ChartCard title="Ефективність по магазинах" hint="Колір — за порогами ефективності. Натисніть на магазин.">
+        <div className="mb-3">
+          <SelectBox
+            label="Показник"
+            value={selectedEff}
+            onChange={setEffCode}
+            options={effDefs.map((e) => ({ value: e.code, label: e.name }))}
+          />
+        </div>
+        <HBarChart
+          items={effBars.map((s) => ({
+            label: s.code ?? s.name,
+            value: s.efficiency[selectedEff].value,
+            level: s.efficiency[selectedEff].level,
+          }))}
+          max={Math.max(20, ...effBars.map((s) => s.efficiency[selectedEff].value ?? 0))}
+          onClick={(i) => onStore(effBars[i].id)}
+        />
+      </ChartCard>
+
+      <ChartCard
+        title="Динаміка магазину по днях"
+        hint={hist.length < 2 ? 'Лінії з’являться, коли накопичиться кілька днів даних' : 'Виконання плану, % за день'}
+        className="lg:col-span-2"
+      >
+        <div className="mb-3">
+          <SelectBox
+            label="Магазин"
+            value={activeStore}
+            onChange={setStoreId}
+            options={withData.map((s) => ({ value: s.id, label: s.name }))}
+          />
+        </div>
+        {detail.loading ? (
+          <p className="py-6 text-center text-sm text-muted">Завантаження...</p>
+        ) : (
+          <LineChart labels={hist.map((h) => ddmm(h.date))} series={planSeries} />
+        )}
+      </ChartCard>
+    </div>
+  )
+}
+
+interface YearStoreMonth {
+  lastDate: string
+  partial: boolean
+  metrics: Record<string, { plan: number | null; fact: number | null; percent: number | null; level: Level | null }>
+  efficiency: Record<string, EffCell>
+}
+interface YearStore {
+  id: string
+  name: string
+  code: string | null
+  city: string | null
+  region: string
+  months: Record<string, YearStoreMonth>
+}
+interface YearResponse {
+  year: number
+  metrics: Named[]
+  efficiency: Named[]
+  stores: YearStore[]
+}
+
+const SHORT_MONTHS = ['січ', 'лют', 'бер', 'кві', 'тра', 'чер', 'лип', 'сер', 'вер', 'жов', 'лис', 'гру']
+
+// Фон комірки за рівнем (таблиця «магазин × місяць»)
+const CELL_BG: Record<Level, string> = {
+  critical: 'bg-danger/25',
+  bad: 'bg-danger/10',
+  warn: 'bg-accent-soft',
+  good: 'bg-success-soft',
+  excellent: 'bg-success-soft',
+}
+
+function YearView({
+  regionId,
+  years,
+  onStore,
+}: {
+  regionId?: string
+  years: string[]
+  onStore: (id: string) => void
+}) {
+  const [year, setYear] = useState(years[0] ?? String(new Date().getFullYear()))
+  const [code, setCode] = useState('TO')
+  const [storeId, setStoreId] = useState('')
+  const { data, loading, error } = useGet<YearResponse>(`/analytics/sales/year${qs({ year, regionId })}`)
+
+  if (loading) return <p className="text-muted">Завантаження...</p>
+  if (error || !data) return <p className="text-danger">{error || 'Немає даних'}</p>
+
+  const keys = SHORT_MONTHS.map((_, i) => `${year}-${String(i + 1).padStart(2, '0')}`)
+  const isEff = data.efficiency.some((e) => e.code === code)
+  const pick = (m: YearStoreMonth | undefined): { v: number | null; level: Level | null } => {
+    if (!m) return { v: null, level: null }
+    if (isEff) {
+      const c = m.efficiency[code]
+      return { v: c?.value ?? null, level: c?.level ?? null }
+    }
+    const c = m.metrics[code]
+    return { v: c?.percent ?? null, level: c?.level ?? null }
+  }
+
+  const storeList = data.stores ?? []
+  const withAny = storeList.filter((s) => Object.keys(s.months).length > 0)
+  const active = storeList.find((s) => s.id === storeId) ?? withAny[0]
+
+  const columns: Column[] = active
+    ? keys.map((k, i) => {
+        const m = active.months[k]
+        const p = pick(m)
+        return {
+          label: SHORT_MONTHS[i],
+          value: p.v,
+          level: p.level,
+          faded: m?.partial,
+          note: m?.partial ? 'місяць не закритий' : undefined,
+        }
+      })
+    : []
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+        <SelectBox
+          label="Рік"
+          value={year}
+          onChange={setYear}
+          options={(years.length ? years : [year]).map((y) => ({ value: y, label: y }))}
+        />
+        <SelectBox
+          label="Показник"
+          value={code}
+          onChange={setCode}
+          options={[
+            ...data.metrics.map((m) => ({ value: m.code, label: m.name })),
+            ...data.efficiency.map((e) => ({ value: e.code, label: e.name })),
+          ]}
+        />
+      </div>
+
+      <div className="mb-3 flex items-start gap-2 rounded-xl border border-border bg-surface-2 px-3 py-2 text-xs text-muted">
+        <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+        <span>
+          Дані накопичуються з моменту підключення синхронізації: таблиці магазинів щомісяця очищаються,
+          тому попередні місяці відновити неможливо. Значення з позначкою «~» — місяць ще не закритий
+          (станом на останню синхронізацію).
+        </span>
+      </div>
+
+      <div className="mb-6 overflow-x-auto rounded-2xl border border-border bg-surface">
+        <table className="w-full min-w-[720px] text-sm">
+          <thead className="bg-surface-2 text-left text-muted">
+            <tr>
+              <th className="px-4 py-2.5 font-medium">Магазин</th>
+              {SHORT_MONTHS.map((m) => (
+                <th key={m} className="px-2 py-2.5 text-center font-medium">
+                  {m}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {storeList.length === 0 && (
+              <tr>
+                <td colSpan={13} className="px-4 py-6 text-center text-muted">
+                  Немає магазинів у межах доступу
+                </td>
+              </tr>
+            )}
+            {storeList.map((s) => (
+              <tr
+                key={s.id}
+                className={clsx(
+                  'cursor-pointer border-t border-border hover:bg-surface-2',
+                  active?.id === s.id && 'bg-accent-soft/40',
+                )}
+                onClick={() => setStoreId(s.id)}
+              >
+                <td className="whitespace-nowrap px-4 py-2">
+                  <p className="font-medium">{s.code ?? s.name}</p>
+                  <p className="text-xs text-muted">{s.name}</p>
+                </td>
+                {keys.map((k) => {
+                  const m = s.months[k]
+                  const p = pick(m)
+                  return (
+                    <td
+                      key={k}
+                      title={m ? `станом на ${fmtDate(m.lastDate)}${m.partial ? ' · не закритий' : ''}` : 'немає даних'}
+                      className={clsx(
+                        'px-2 py-2 text-center tabular-nums',
+                        p.level ? CELL_BG[p.level] : '',
+                        levelText(p.level),
+                      )}
+                    >
+                      {p.v === null ? '—' : `${m?.partial ? '~' : ''}${p.v}%`}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ChartCard
+        title={active ? `${active.name} — по місяцях, ${year}` : 'По місяцях'}
+        hint="Оберіть магазин у таблиці вище або тут"
+      >
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <SelectBox
+            label="Магазин"
+            value={active?.id ?? ''}
+            onChange={setStoreId}
+            options={storeList.map((s) => ({ value: s.id, label: s.name }))}
+          />
+          {active && (
+            <button className="text-sm text-accent hover:underline" onClick={() => onStore(active.id)}>
+              Відкрити магазин
+            </button>
+          )}
+        </div>
+        <ColumnChart
+          columns={columns}
+          max={isEff ? Math.max(20, ...columns.map((c) => c.value ?? 0)) : Math.max(120, ...columns.map((c) => c.value ?? 0))}
+        />
+      </ChartCard>
     </div>
   )
 }
@@ -461,6 +804,7 @@ export default function SalesSection() {
   }, [periods.data, month])
 
   const base = qs({ month, regionId: region?.id })
+  const overview = useGet<Overview>(`/analytics/sales/overview${base}`)
   const stores = useGet<StoresResponse>(`/analytics/sales/stores${base}`)
   const regions = useGet<RegionsResponse>(`/analytics/sales/regions${qs({ month })}`)
   const alerts = useGet<{ alerts: Alert[] }>(tab === 'alerts' ? `/analytics/sales/alerts${base}` : null)
@@ -489,6 +833,7 @@ export default function SalesSection() {
     { key: 'regions', label: 'Області' },
     { key: 'ranking', label: 'Рейтинг' },
     { key: 'alerts', label: 'Сигнали' },
+    { key: 'year', label: 'Рік' },
   ]
 
   return (
@@ -511,7 +856,8 @@ export default function SalesSection() {
         {region && <Chip label={`Область: ${region.name}`} onClear={() => setRegion(null)} />}
       </div>
 
-      <Overview query={base} />
+      <OverviewCards o={overview.data} loading={overview.loading} error={overview.error} />
+      <ChartsPanel stores={stores.data} query={qs({ month })} onStore={openStore} />
 
       <Tabs tabs={tabs} value={tab} onChange={setTab} />
 
@@ -665,6 +1011,14 @@ export default function SalesSection() {
             </p>
           )}
         </div>
+      )}
+
+      {tab === 'year' && (
+        <YearView
+          regionId={region?.id}
+          years={[...new Set((periods.data ?? []).map((m) => m.slice(0, 4)))]}
+          onStore={openStore}
+        />
       )}
 
       {tab === 'alerts' && (

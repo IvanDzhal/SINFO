@@ -605,6 +605,251 @@ export class SalesAnalyticsService {
     return { month: b.period.key, alerts: this.alertsFor(b.rows, b.defs, scopes.includes('GLOBAL')) };
   }
 
+  // Динаміка мережі по днях місяця: накопичувальний % плану та продаж за день.
+  // Для кожного дня береться останнє відоме значення магазину (дані могли надійти не щодня).
+  async trend(viewer: Actor, scopes: Scope[], f: SalesFilters) {
+    const b = await this.build(viewer, scopes, f);
+    const dateSet = new Set<string>();
+    for (const days of b.byStore.values()) for (const d of days.keys()) dateSet.add(d);
+    const dates = [...dateSet].sort();
+
+    const points = dates.map((date) => {
+      const metrics: Record<
+        string,
+        { plan: number | null; fact: number | null; percent: number | null; dayFact: number | null }
+      > = {};
+      for (const d of b.base) {
+        let plan = 0;
+        let fact = 0;
+        let day = 0;
+        let dayCount = 0;
+        let covered = 0;
+        for (const days of b.byStore.values()) {
+          const known = [...days.keys()].filter((k) => k <= date).sort();
+          const last = known.length ? known[known.length - 1] : null;
+          const r = last ? days.get(last)?.get(d.code) : undefined;
+          if (r && r.plan !== null && r.fact !== null) {
+            plan += r.plan;
+            fact += r.fact;
+            covered += 1;
+          }
+          // продаж за день — лише якщо магазин має запис саме на цю дату
+          const own = days.get(date)?.get(d.code);
+          if (own && own.dayFact !== null) {
+            day += own.dayFact;
+            dayCount += 1;
+          }
+        }
+        metrics[d.code] = {
+          plan: covered ? plan : null,
+          fact: covered ? fact : null,
+          percent: covered ? num(completion(fact, plan)) : null,
+          dayFact: dayCount ? day : null,
+        };
+      }
+      const eff: Record<string, number | null> = {};
+      for (const d of b.eff) {
+        const n = d.numerator ? (metrics[d.numerator]?.fact ?? null) : null;
+        const m = d.denominator ? (metrics[d.denominator]?.fact ?? null) : null;
+        eff[d.code] = num(efficiency(n, m));
+      }
+      return { date, metrics, efficiency: eff };
+    });
+
+    return {
+      month: b.period.key,
+      metrics: b.base.map((d) => ({ code: d.code, name: d.name, shortName: d.shortName })),
+      efficiency: b.eff.map((d) => ({ code: d.code, name: d.name, shortName: d.shortName })),
+      points,
+    };
+  }
+
+  // Підсумок по місяцях календарного року. Значення місяця — останній знімок кожного магазину
+  // за цей місяць; незакриті місяці (поточний або з неповними даними) позначені partial.
+  async year(
+    viewer: Actor,
+    scopes: Scope[],
+    f: { year?: string; regionId?: string; storeId?: string },
+  ) {
+    const nowYear = Number(iso(kyivDay()).slice(0, 4));
+    const year = f.year ? Number(f.year) : nowYear;
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      throw new BadRequestException('Некоректний рік');
+    }
+    const start = new Date(Date.UTC(year, 0, 1));
+    const end = new Date(Date.UTC(year, 11, 31));
+
+    const [defs, stores] = await Promise.all([
+      this.defs(),
+      this.prisma.store.findMany({
+        where: this.storeWhere(scopes, viewer, { regionId: f.regionId, storeId: f.storeId }),
+        orderBy: { name: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          city: { select: { name: true } },
+          region: { select: { name: true } },
+        },
+      }),
+    ]);
+    const base = defs.filter((d) => d.kind === 'base');
+    const eff = defs.filter((d) => d.kind === 'efficiency');
+    const ids = stores.map((s) => s.id);
+
+    const [rows, snaps] = ids.length
+      ? await Promise.all([
+          this.prisma.salesMetric.findMany({
+            where: { storeId: { in: ids }, date: { gte: start, lte: end } },
+            select: { storeId: true, date: true, metricCode: true, plan: true, fact: true },
+          }),
+          this.prisma.salesSnapshot.findMany({
+            where: { storeId: { in: ids }, date: { gte: start, lte: end } },
+            select: { storeId: true, date: true, daysLeft: true },
+          }),
+        ])
+      : [[], []];
+
+    // місяць → магазин → остання дата з даними
+    const lastDate = new Map<string, Map<string, string>>();
+    for (const r of rows) {
+      const d = iso(r.date);
+      const mk = d.slice(0, 7);
+      const perStore = lastDate.get(mk) ?? new Map<string, string>();
+      if (!perStore.has(r.storeId) || perStore.get(r.storeId)! < d) perStore.set(r.storeId, d);
+      lastDate.set(mk, perStore);
+    }
+    const left = new Map<string, number | null>();
+    for (const s of snaps) left.set(`${s.storeId}|${iso(s.date)}`, s.daysLeft);
+
+    const currentKey = iso(kyivDay()).slice(0, 7);
+    const months: Record<string, unknown>[] = [];
+
+    // магазин → місяць → показники на останню дату місяця (основний розріз «по кожному магазину»)
+    type StoreMonth = {
+      lastDate: string;
+      partial: boolean;
+      metrics: Record<string, { plan: number | null; fact: number | null; percent: number | null; level: Level | null }>;
+      efficiency: Record<string, EffCell>;
+    };
+    const perStoreMonths = new Map<string, Record<string, StoreMonth>>();
+
+    for (let m = 1; m <= 12; m++) {
+      const key = `${year}-${String(m).padStart(2, '0')}`;
+      const perStore = lastDate.get(key);
+      if (!perStore) {
+        months.push({ month: key, hasData: false });
+        continue;
+      }
+      const at = new Map<string, Map<string, { plan: number | null; fact: number | null }>>();
+      for (const r of rows) {
+        if (iso(r.date) !== perStore.get(r.storeId)) continue;
+        const per = at.get(r.storeId) ?? new Map();
+        per.set(r.metricCode, { plan: r.plan, fact: r.fact });
+        at.set(r.storeId, per);
+      }
+
+      for (const [sid, per] of at) {
+        const sm: StoreMonth['metrics'] = {};
+        for (const d of base) {
+          const r = per.get(d.code);
+          const pct = r && r.plan !== null && r.fact !== null ? completion(r.fact, r.plan) : null;
+          sm[d.code] = {
+            plan: r?.plan ?? null,
+            fact: r?.fact ?? null,
+            percent: num(pct),
+            level: levelOf(pct === null ? null : round1(pct), d.thresholds),
+          };
+        }
+        const se: Record<string, EffCell> = {};
+        for (const d of eff) {
+          const v = efficiency(
+            d.numerator ? (sm[d.numerator]?.fact ?? null) : null,
+            d.denominator ? (sm[d.denominator]?.fact ?? null) : null,
+          );
+          se[d.code] = { value: num(v), level: levelOf(v === null ? null : round1(v), d.thresholds) };
+        }
+        const last = perStore.get(sid)!;
+        const bucket = perStoreMonths.get(sid) ?? {};
+        bucket[key] = {
+          lastDate: last,
+          partial: key === currentKey || left.get(`${sid}|${last}`) !== 0,
+          metrics: sm,
+          efficiency: se,
+        };
+        perStoreMonths.set(sid, bucket);
+      }
+
+      const metrics: Record<
+        string,
+        { plan: number | null; fact: number | null; percent: number | null; level: Level | null }
+      > = {};
+      for (const d of base) {
+        let plan = 0;
+        let fact = 0;
+        let covered = 0;
+        for (const per of at.values()) {
+          const r = per.get(d.code);
+          if (r && r.plan !== null && r.fact !== null) {
+            plan += r.plan;
+            fact += r.fact;
+            covered += 1;
+          }
+        }
+        const pct = covered ? completion(fact, plan) : null;
+        metrics[d.code] = {
+          plan: covered ? plan : null,
+          fact: covered ? fact : null,
+          percent: num(pct),
+          level: levelOf(pct === null ? null : round1(pct), d.thresholds),
+        };
+      }
+      const efficiencies: Record<string, EffCell> = {};
+      for (const d of eff) {
+        const n = d.numerator ? (metrics[d.numerator]?.fact ?? null) : null;
+        const den = d.denominator ? (metrics[d.denominator]?.fact ?? null) : null;
+        const v = efficiency(n, den);
+        efficiencies[d.code] = {
+          value: num(v),
+          level: levelOf(v === null ? null : round1(v), d.thresholds),
+        };
+      }
+
+      const dates = [...perStore.values()].sort();
+      // місяць закритий, якщо в усіх магазинів останній знімок мав 0 днів до кінця
+      const closed =
+        key !== currentKey &&
+        [...perStore.entries()].every(([sid, d]) => left.get(`${sid}|${d}`) === 0);
+
+      months.push({
+        month: key,
+        hasData: true,
+        stores: perStore.size,
+        lastDate: dates[dates.length - 1],
+        partial: !closed,
+        metrics,
+        efficiency: efficiencies,
+      });
+    }
+
+    return {
+      year,
+      metrics: base.map((d) => ({ code: d.code, name: d.name, shortName: d.shortName })),
+      efficiency: eff.map((d) => ({ code: d.code, name: d.name, shortName: d.shortName })),
+      // по кожному магазину окремо
+      stores: stores.map((s) => ({
+        id: s.id,
+        name: s.name,
+        code: s.code,
+        city: s.city?.name ?? null,
+        region: s.region.name,
+        months: perStoreMonths.get(s.id) ?? {},
+      })),
+      // зведення по мережі лишається в API для сумісності, інтерфейс його не використовує
+      months,
+    };
+  }
+
   // Рейтинг із явним критерієм (ANALYTICS §13): виконання плану, прогноз або ефективність
   async rankings(
     viewer: Actor,

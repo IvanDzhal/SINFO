@@ -69,6 +69,22 @@ export class SalesAnalyticsController {
   }
 
   @Permissions('analytics.sales.view')
+  @Get('trend')
+  trend(@Req() req: any, @Query() q: SalesQuery) {
+    return this.service.trend(req.user, scopesOf(req), filters(q));
+  }
+
+  @Permissions('analytics.sales.view')
+  @Get('year')
+  year(@Req() req: any, @Query() q: SalesQuery & { year?: string }) {
+    return this.service.year(req.user, scopesOf(req), {
+      year: q.year || undefined,
+      regionId: q.regionId || undefined,
+      storeId: q.storeId || undefined,
+    });
+  }
+
+  @Permissions('analytics.sales.view')
   @Get('regions')
   regions(@Req() req: any, @Query() q: SalesQuery) {
     return this.service.regions(req.user, scopesOf(req), filters(q));
