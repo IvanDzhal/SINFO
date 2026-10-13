@@ -45,6 +45,7 @@ interface TestData {
   maxAttempts: number
   visibility: Rule[]
   errors: string[]
+  questions?: Question[]
 }
 
 const STATUS_LABEL: Record<Status, string> = {

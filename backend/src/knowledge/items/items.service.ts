@@ -359,13 +359,23 @@ export class ItemsService {
 
     const parentOf = new Map(cats.map((c) => [c.id, c.parentId]));
     const counts = new Map<string, number>();
+    const own = new Map<string, number>();
     for (const r of rows) {
       if (!r.categoryId) continue;
+      own.set(r.categoryId, (own.get(r.categoryId) ?? 0) + 1);
       const root = parentOf.get(r.categoryId) ?? r.categoryId;
       counts.set(root, (counts.get(root) ?? 0) + 1);
     }
     return cats
       .filter((c) => !c.parentId && counts.has(c.id))
-      .map((c) => ({ id: c.id, name: c.name, icon: c.icon, count: counts.get(c.id) ?? 0 }));
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        icon: c.icon,
+        count: counts.get(c.id) ?? 0,
+        children: cats
+          .filter((s) => s.parentId === c.id && own.has(s.id))
+          .map((s) => ({ id: s.id, name: s.name, icon: s.icon, count: own.get(s.id) ?? 0 })),
+      }));
   }
 }

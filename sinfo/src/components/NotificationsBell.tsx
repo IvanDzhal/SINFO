@@ -83,7 +83,8 @@ export default function NotificationsBell() {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Сповіщення"
-        className="relative flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface"
+        title="Сповіщення"
+        className="relative flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface transition-colors hover:border-accent hover:bg-accent-soft hover:text-accent"
       >
         <Bell size={18} />
         {unread > 0 && (

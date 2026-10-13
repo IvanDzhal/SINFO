@@ -167,17 +167,25 @@ const can = useCan()
             <button
               onClick={toggle}
               aria-label="Змінити тему"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface"
+              title={theme === 'dark' ? 'Світла тема' : 'Темна тема'}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface transition-colors hover:border-accent hover:bg-accent-soft hover:text-accent"
             >
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <div className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pl-1 pr-3 text-sm">
+            <Link
+              to="/profile"
+              title="Мій профіль"
+              className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pl-1 pr-1 text-sm transition-colors hover:border-accent hover:bg-accent-soft hover:text-accent sm:pr-3"
+            >
               <Avatar firstName={user?.firstName ?? ''} lastName={user?.lastName ?? ''} url={avatar} size="sm" />
               <span className="hidden sm:inline">
                 {user?.firstName} {user?.lastName}
               </span>
-            </div>
-            <button onClick={logout} className="text-sm text-muted hover:text-ink">
+            </Link>
+            <button
+              onClick={logout}
+              className="rounded-lg px-2 py-1 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+            >
               Вийти
             </button>
           </div>

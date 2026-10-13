@@ -308,7 +308,7 @@ export default function HomePage() {
   const visible = cards.filter((c) => !c.perm || can(c.perm))
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
       <div>
         <h2 className="mb-5 text-2xl font-semibold">Ласкаво просимо, {user?.firstName}! 👋</h2>
 

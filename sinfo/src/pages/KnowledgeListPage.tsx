@@ -72,8 +72,13 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
   const [unread, setUnread] = useState(false)
   const [sort, setSort] = useState('new')
 
-  function pickCategory(key: string) {
-    setParams(key === 'all' ? {} : { category: key }, { replace: true })
+  const sub = params.get('sub')
+
+  function pickCategory(key: string, subKey?: string) {
+    const next: Record<string, string> = {}
+    if (key !== 'all') next.category = key
+    if (key !== 'all' && subKey) next.sub = subKey
+    setParams(next, { replace: true })
   }
 
   function changeMode(next: Mode) {
@@ -97,19 +102,20 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
     let list = items.data
     if (unread) list = list.filter((i) => !i.isRead)
     if (category !== 'all') list = list.filter((i) => rootId(i) === category)
+    if (category !== 'all' && sub) list = list.filter((i) => i.category?.id === sub)
     return [...list].sort((a, b) => {
       if (sort === 'title') return a.title.localeCompare(b.title, 'uk')
       const diff = new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       return sort === 'old' ? -diff : diff
     })
-  }, [items.data, category, unread, sort])
+  }, [items.data, category, sub, unread, sort])
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">{TEXT[type].title}</h2>
-          <p className="mb-5 text-sm text-muted">{TEXT[type].subtitle}</p>
+          <p className="text-sm text-muted">{TEXT[type].subtitle}</p>
         </div>
         {can('knowledge.create') && (
           <Link
