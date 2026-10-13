@@ -30,6 +30,12 @@ export class ProfileController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('team')
+  team(@Req() req: any) {
+    return this.service.team(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('ranking')
   ranking(@Req() req: any) {
     return this.service.ranking(req.user.id);

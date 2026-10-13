@@ -283,7 +283,6 @@ export default function HomePage() {
   const user = useAuthStore((s) => s.user)
   const can = useCan()
   const news = useFetch<NewsItem>('/knowledge/items/latest?type=news&limit=5')
-  const showOnline = can('analytics.online_status.view')
   const visible = cards.filter((c) => !c.perm || can(c.perm))
 
   return (
@@ -308,7 +307,7 @@ export default function HomePage() {
         <div className="hidden xl:block">
           <NewsCard items={news.data} loading={news.loading} />
         </div>
-        {showOnline && <OnlineCard />}
+        <OnlineCard />
       </aside>
     </div>
   )
