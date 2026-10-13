@@ -137,7 +137,7 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <section className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-surface p-5">
+      <section className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 sm:p-5">
         <Avatar firstName={u.firstName} lastName={u.lastName} url={u.avatarUrl} size="lg" />
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-semibold">
@@ -165,10 +165,12 @@ export default function ProfilePage() {
         {data.isSelf && (
           <Link
             to="/profile/settings"
-            className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm hover:bg-surface-2"
+            aria-label="Налаштування"
+            title="Налаштування"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-border p-2 text-sm hover:bg-surface-2 sm:px-3"
           >
             <Settings size={16} />
-            Налаштування
+            <span className="hidden sm:inline">Налаштування</span>
           </Link>
         )}
       </section>
