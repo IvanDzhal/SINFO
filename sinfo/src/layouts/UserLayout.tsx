@@ -21,6 +21,8 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { useThemeStore } from '@/store/useThemeStore'
 import { useCan } from '@/hooks/useCan'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
+import { useMyAvatar } from '@/hooks/useMyAvatar'
+import Avatar from '@/components/Avatar'
 import SearchBox from '@/components/SearchBox'
 import NotificationsBell from '@/components/NotificationsBell'
 import SidebarCategories from '@/components/SidebarCategories'
@@ -55,8 +57,8 @@ export default function UserLayout() {
   const can = useCan()
   const [open, setOpen] = useState(false)
   useHeartbeat()
+  const avatar = useMyAvatar()
 
-  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`
   const items = nav.filter((i) => !i.perms || i.perms.some((p) => can(p)))
 
   return (
@@ -130,9 +132,7 @@ export default function UserLayout() {
               to="/profile"
               className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pl-1 pr-3 text-sm"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-soft text-xs font-medium text-accent">
-                {initials}
-              </span>
+              <Avatar firstName={user?.firstName ?? ''} lastName={user?.lastName ?? ''} url={avatar} size="sm" />
               <span className="hidden sm:inline">
                 {user?.firstName} {user?.lastName}
               </span>
