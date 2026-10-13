@@ -4,6 +4,8 @@ import clsx from 'clsx'
 import { useFetch } from '@/hooks/useFetch'
 import { useCan } from '@/hooks/useCan'
 import TestEditorDrawer from '@/components/TestEditorDrawer'
+import { Link } from 'react-router-dom'
+import TestStatusBadge, { type MyStatus } from '@/components/TestStatusBadge'
 
 type Mode = 'published' | 'draft' | 'archived'
 
@@ -24,6 +26,10 @@ interface AvailableTest {
   passingScorePercent: number
   maxAttempts: number
   category: Category | null
+  myStatus: MyStatus
+  attemptsUsed: number
+  bestPercent: number | null
+  inProgressAttemptId: string | null
 }
 
 interface ManageRow {
@@ -161,35 +167,53 @@ function AvailableSection() {
         </p>
       )}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {data.map((t) => (
-          <div key={t.id} className="flex flex-col rounded-2xl border border-border bg-surface p-5">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              {t.category && (
-                <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted">
-                  {t.category.name}
+        {data.map((t) => {
+          const action = t.inProgressAttemptId
+            ? 'Продовжити'
+            : t.myStatus === 'not_started' || t.myStatus === 'in_progress'
+              ? 'Почати'
+              : 'Деталі'
+          return (
+            <Link
+              key={t.id}
+              to={`/testing/${t.id}`}
+              className="flex flex-col rounded-2xl border border-border bg-surface p-5 hover:border-accent"
+            >
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <TestStatusBadge status={t.myStatus} />
+                {t.category && (
+                  <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted">
+                    {t.category.name}
+                  </span>
+                )}
+                {t.isRequired && (
+                  <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">
+                    Обов'язковий
+                  </span>
+                )}
+              </div>
+              <h4 className="text-base font-semibold">{t.title}</h4>
+              {t.description && <p className="mt-1 text-sm text-muted">{t.description}</p>}
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+                <span className="inline-flex items-center gap-1">
+                  <Clock size={14} /> {t.timeLimitMinutes} хв
                 </span>
-              )}
-              {t.isRequired && (
-                <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">
-                  Обов'язковий
+                <span>{t.questionCount} питань</span>
+                <span>прохідний {t.passingScorePercent}%</span>
+                <span>
+                  {t.maxAttempts === 0
+                    ? `спроб: ${t.attemptsUsed}`
+                    : `спроб: ${t.attemptsUsed} з ${t.maxAttempts}`}
                 </span>
-              )}
-            </div>
-            <h4 className="text-base font-semibold">{t.title}</h4>
-            {t.description && <p className="mt-1 text-sm text-muted">{t.description}</p>}
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-              <span className="inline-flex items-center gap-1">
-                <Clock size={14} /> {t.timeLimitMinutes} хв
-              </span>
-              <span>{t.questionCount} питань</span>
-              <span>прохідний {t.passingScorePercent}%</span>
-              <span>{t.maxAttempts === 0 ? 'спроби без обмежень' : `спроб: ${t.maxAttempts}`}</span>
-            </div>
-            <div className="mt-2">
-              <Deadline iso={t.deadline} />
-            </div>
-          </div>
-        ))}
+                {t.bestPercent !== null && <span>найкращий: {Math.floor(t.bestPercent)}%</span>}
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <Deadline iso={t.deadline} />
+                <span className="ml-auto text-sm font-medium text-accent">{action} →</span>
+              </div>
+            </Link>
+          )
+        })}
       </div>
     </div>
   )

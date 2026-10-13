@@ -88,10 +88,13 @@ export class QuestionsService {
 
   async remove(user: Actor, questionId: string) {
     const { q, test } = await this.loadQuestion(user, questionId);
-    if (test.status === 'draft') {
+    const answered = await this.prisma.testAnswer.count({ where: { questionId } });
+    const hard = test.status === 'draft' && answered === 0;
+
+    if (hard) {
       await this.prisma.testQuestion.delete({ where: { id: questionId } });
     } else {
-      // у опублікованих тестах можуть бути спроби, тому питання архівуємо
+      // якщо вже були спроби, питання архівуємо, щоб історія не зламалась
       await this.prisma.testQuestion.update({
         where: { id: questionId },
         data: { archivedAt: new Date() },
@@ -99,7 +102,7 @@ export class QuestionsService {
     }
     await this.audit.log(user.id, 'test_question.deleted', 'TestQuestion', questionId, {
       testId: q.testId,
-      archived: test.status !== 'draft',
+      archived: !hard,
     });
     return { ok: true };
   }

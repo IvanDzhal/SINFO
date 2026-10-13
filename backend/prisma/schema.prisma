@@ -46,6 +46,7 @@ model User {
   knowledgeFiles KnowledgeFile[]
   notifications Notification[]
   createdTests Test[]
+  testAttempts TestAttempt[]
 }
 
 model Role {
@@ -330,6 +331,7 @@ model Test {
   updatedAt           DateTime           @updatedAt
   questions           TestQuestion[]
   visibility          TestVisibility[]
+  attempts TestAttempt[]
 
   @@index([status])
 }
@@ -355,6 +357,7 @@ model TestQuestion {
   archivedAt  DateTime?
   test        Test         @relation(fields: [testId], references: [id], onDelete: Cascade)
   options     TestOption[]
+  answers TestAnswer[]
 
   @@index([testId])
 }
@@ -367,4 +370,49 @@ model TestOption {
   isCorrect  Boolean      @default(false)
   position   Int          @default(0)
   question   TestQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+enum AttemptStatus {
+  in_progress
+  completed
+}
+
+model TestAttempt {
+  id            String        @id @default(uuid())
+  testId        String
+  userId        String
+  attemptNumber Int
+  startedAt     DateTime      @default(now())
+  expiresAt     DateTime
+  completedAt   DateTime?
+  timedOut      Boolean       @default(false)
+  status        AttemptStatus @default(in_progress)
+  questionIds   String[]
+  seed          Int
+  score         Int?
+  maxScore      Int
+  scorePercent  Float?
+  passed        Boolean?
+  test          Test          @relation(fields: [testId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  answers       TestAnswer[]
+
+  @@unique([testId, userId, attemptNumber])
+  @@index([userId, testId])
+  @@index([testId, status])
+}
+
+model TestAnswer {
+  id         String       @id @default(uuid())
+  attemptId  String
+  questionId String
+  answer     Json?
+  isCorrect  Boolean?
+  score      Int?
+  answeredAt DateTime     @default(now())
+  attempt    TestAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question   TestQuestion @relation(fields: [questionId], references: [id])
+
+  @@unique([attemptId, questionId])
+  @@index([questionId])
 }

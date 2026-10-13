@@ -11,15 +11,20 @@ import { Actor, regionIdsOf, scopesFor } from '../knowledge/helpers';
 import { CreateTestDto, UpdateTestDto } from './dto/test.dto';
 import { toQuestionData, validateQuestion, validateTest } from './validation';
 import { resolveAssignment, testAuthorWhere, testVisibleWhere } from './visibility';
+import { AttemptsService } from './attempts.service';
 
 @Injectable()
 export class TestsService {
-  constructor(private prisma: PrismaService, private audit: AuditService) {}
+    constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+    private attempts: AttemptsService,
+  ) {}
 
   // Опубліковані тести, призначені користувачу
-  async list(user: Actor) {
+    async list(user: Actor) {
     const where = await testVisibleWhere(this.prisma, user);
-    return this.prisma.test.findMany({
+    const tests = await this.prisma.test.findMany({
       where,
       orderBy: [{ isRequired: 'desc' }, { createdAt: 'desc' }],
       select: {
@@ -36,6 +41,7 @@ export class TestsService {
         linkedItem: { select: { id: true, slug: true, title: true } },
       },
     });
+    return this.attempts.decorate(user, tests);
   }
 
   async manageList(user: Actor, status?: string) {
@@ -238,6 +244,10 @@ export class TestsService {
     const test = await this.loadManageable(user, id, 'testing.delete');
     if (test.status !== 'draft') {
       throw new BadRequestException('Видалити можна лише чернетку. Для решти використайте архів');
+    }
+    const attempts = await this.prisma.testAttempt.count({ where: { testId: id } });
+    if (attempts > 0) {
+      throw new BadRequestException('У тесту є спроби, видалити його не можна. Використайте архів');
     }
     await this.prisma.test.delete({ where: { id } });
     await this.audit.log(user.id, 'test.deleted', 'Test', id, { title: test.title });

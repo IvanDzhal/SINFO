@@ -20,6 +20,8 @@ import KnowledgeListPage from '@/pages/KnowledgeListPage'
 import KnowledgeArticlePage from '@/pages/KnowledgeArticlePage'
 import KnowledgeEditPage from '@/pages/KnowledgeEditPage'
 import TestingPage from '@/pages/TestingPage'
+import TestDetailPage from '@/pages/TestDetailPage'
+import TestAttemptPage from '@/pages/TestAttemptPage'
 
 const stubs = [
   { path: 'about', title: 'Про компанію' },
@@ -39,6 +41,8 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="instructions" element={<KnowledgeListPage key="instruction" type="instruction" />} />
             <Route path="testing" element={<TestingPage />} />
+            <Route path="testing/:id" element={<TestDetailPage />} />
+            <Route path="testing/attempt/:attemptId" element={<TestAttemptPage />} />
             <Route path="news" element={<KnowledgeListPage key="news" type="news" />} />
             <Route path="materials" element={<KnowledgeListPage key="material" type="material" />} />
             <Route path="knowledge/:id" element={<KnowledgeArticlePage />} />
