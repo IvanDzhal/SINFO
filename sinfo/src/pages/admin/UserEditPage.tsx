@@ -1,3 +1,4 @@
+import Avatar from '@/components/Avatar'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
@@ -17,6 +18,7 @@ interface UserDetail {
   id: string
   login: string
   firstName: string
+  avatarUrl?: string | null
   lastName: string
   position: string | null
   status: string
@@ -252,6 +254,7 @@ export default function UserEditPage() {
       </Link>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        <Avatar firstName={user.firstName} lastName={user.lastName} url={user.avatarUrl} />
         <h2 className="text-xl font-semibold">
           {user.firstName} {user.lastName}
         </h2>

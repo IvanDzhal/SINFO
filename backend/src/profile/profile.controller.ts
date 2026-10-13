@@ -30,9 +30,15 @@ export class ProfileController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('team')
+  team(@Req() req: any) {
+    return this.service.team(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('ranking')
   ranking(@Req() req: any) {
-    return this.service.ranking(req.user.id);
+    return this.service.ranking(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -72,8 +78,8 @@ export class ProfileController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id')
-  byId(@Req() req: any, @Param('id') id: string) {
-    return this.service.get(req.user, id);
+  @Get(':ref')
+  byRef(@Req() req: any, @Param('ref') ref: string) {
+    return this.service.get(req.user, ref);
   }
 }

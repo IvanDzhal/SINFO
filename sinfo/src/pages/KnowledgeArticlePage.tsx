@@ -1,3 +1,4 @@
+import Avatar from '@/components/Avatar'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Clock, Eye, History, Pencil } from 'lucide-react'
@@ -22,7 +23,7 @@ interface Article {
   viewsCount: number
   readingTimeMinutes: number
   updatedAt: string
-  author: { firstName: string; lastName: string }
+  author: { firstName: string; lastName: string; avatarUrl?: string | null }
   category: { id: string; name: string; icon: string | null; parent: { name: string } | null } | null
   isRead: boolean
   readToken: string
@@ -194,7 +195,13 @@ export default function KnowledgeArticlePage() {
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-            <span>
+            <span className="inline-flex items-center gap-2">
+              <Avatar
+                firstName={article.author.firstName}
+                lastName={article.author.lastName}
+                url={article.author.avatarUrl}
+                size="sm"
+              />
               {article.author.firstName} {article.author.lastName}
             </span>
             <span>Оновлено {new Date(article.updatedAt).toLocaleDateString('uk-UA')}</span>

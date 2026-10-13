@@ -3,6 +3,7 @@ import { UserStatus } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
+import { AvatarService } from '../../profile/avatar.service';
 import {
   ChangeLoginDto,
   CreateUserDto,
@@ -22,7 +23,16 @@ const SAFE_INCLUDE = {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService, private audit: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+    private avatars: AvatarService,
+  ) {}
+
+  private safe<T extends { passwordHash: string; id: string; avatarKey: string | null; avatarUpdatedAt: Date | null }>(u: T) {
+    const { passwordHash, avatarKey, avatarUpdatedAt, ...rest } = u;
+    return { ...rest, avatarUrl: this.avatars.link({ id: u.id, avatarKey, avatarUpdatedAt }) };
+  }
 
   async list(filters: {
     status?: string;
@@ -48,14 +58,13 @@ export class UsersService {
       orderBy: { lastName: 'asc' },
       include: SAFE_INCLUDE,
     });
-    return users.map(({ passwordHash, ...safe }) => safe);
+    return users.map((u) => this.safe(u));
   }
 
   async get(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id }, include: SAFE_INCLUDE });
     if (!user) throw new NotFoundException('Користувача не знайдено');
-    const { passwordHash, ...safe } = user;
-    return safe;
+    return this.safe(user);
   }
 
   async create(actorId: string, dto: CreateUserDto) {

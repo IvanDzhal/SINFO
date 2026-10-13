@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { BookOpen, ClipboardCheck, Settings, Trophy } from 'lucide-react'
+import { BookOpen, ClipboardCheck, Settings, Trophy, Users } from 'lucide-react'
 import clsx from 'clsx'
 import { api } from '@/services/api'
 import { useCan } from '@/hooks/useCan'
@@ -24,6 +24,7 @@ interface Profile {
     lastActivityAt?: string | null
   }
   isSelf: boolean
+  hasTeam: boolean
   kpi: {
     instructionsRead: number | null
     testsPassed: number | null
@@ -55,8 +56,32 @@ interface Profile {
 
 interface Ranking {
   period: string
-  top: { rank: number; userId: string; name: string; store: string | null; percent: number; avatarUrl: string | null; isMe: boolean }[]
+  top: {
+    rank: number
+    userId: string
+    login: string
+    name: string
+    store: string | null
+    percent: number
+    avatarUrl: string | null
+    isMe: boolean
+    canOpen: boolean
+  }[]
   me: { rank: number; name: string; percent: number } | null
+}
+
+interface TeamMember {
+  id: string
+  login: string
+  firstName: string
+  lastName: string
+  avatarUrl: string | null
+  region: string | null
+  store: string | null
+  city: string | null
+  tests: number
+  percent: number | null
+  online: boolean
 }
 
 const ONLINE_MS = 90_000
@@ -99,6 +124,105 @@ function Kpi({ label, value }: { label: string; value: string }) {
   )
 }
 
+function TeamCard() {
+  const [members, setMembers] = useState<TeamMember[] | null>(null)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+  const [region, setRegion] = useState('')
+
+  useEffect(() => {
+    api
+      .get<TeamMember[]>('/profile/team')
+      .then((r) => setMembers(r.data))
+      .catch(() => setError('Не вдалося завантажити список продавців'))
+  }, [])
+
+  const regions = [...new Set((members ?? []).map((m) => m.region).filter((x): x is string => !!x))].sort()
+  const q = search.trim().toLowerCase()
+  const shown = (members ?? []).filter(
+    (m) =>
+      (!region || m.region === region) &&
+      (!q || `${m.firstName} ${m.lastName} ${m.store ?? ''} ${m.city ?? ''}`.toLowerCase().includes(q)),
+  )
+
+  return (
+    <Card title={`Продавці${members ? ` · ${members.length}` : ''}`} icon={<Users size={16} className="text-accent" />}>
+      {error && <p className="text-sm text-danger">{error}</p>}
+      {!members && !error && <Empty text="Завантаження..." />}
+      {members && (
+        <>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Пошук за іменем, магазином, містом"
+              className="min-w-0 flex-1 rounded-xl border border-border bg-bg px-3 py-2 text-sm"
+            />
+            {regions.length > 1 && (
+              <select
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="rounded-xl border border-border bg-bg px-3 py-2 text-sm"
+              >
+                <option value="">Усі області</option>
+                {regions.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          {shown.length === 0 ? (
+            <Empty text={members.length === 0 ? 'У вашій зоні поки немає продавців' : 'Нічого не знайдено'} />
+          ) : (
+            <ul className="max-h-96 divide-y divide-border overflow-y-auto">
+              {shown.map((m) => (
+                <li key={m.id}>
+                  <Link to={`/profile/${encodeURIComponent(m.login)}`} className="flex items-center gap-3 py-2 hover:bg-surface-2">
+                    <span className="relative shrink-0">
+                      <Avatar firstName={m.firstName} lastName={m.lastName} url={m.avatarUrl} />
+                      {m.online && (
+                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-success" />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm">
+                        {m.firstName} {m.lastName}
+                      </span>
+                      <span className="block truncate text-xs text-muted">
+                        {[m.store, m.city, region ? null : m.region].filter(Boolean).join(' · ') || '—'}
+                      </span>
+                    </span>
+                    <span
+                      className={clsx(
+                        'shrink-0 text-sm font-semibold',
+                        m.percent === null ? 'text-muted' : m.percent >= 80 ? 'text-success' : 'text-danger',
+                      )}
+                    >
+                      {m.percent === null ? '—' : `${m.percent}%`}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </Card>
+  )
+}
+
+// Рядок-посилання, якщо профіль доступний; інакше звичайний блок
+function RowLink({ to, className, children }: { to: string | null; className?: string; children: React.ReactNode }) {
+  if (!to) return <div className={className}>{children}</div>
+  return (
+    <Link to={to} className={clsx(className, 'hover:bg-surface-2')}>
+      {children}
+    </Link>
+  )
+}
+
 const Empty = ({ text }: { text: string }) => <p className="text-sm text-muted">{text}</p>
 
 export default function ProfilePage() {
@@ -137,7 +261,7 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <section className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-surface p-5">
+      <section className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 sm:p-5">
         <Avatar firstName={u.firstName} lastName={u.lastName} url={u.avatarUrl} size="lg" />
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-semibold">
@@ -165,10 +289,12 @@ export default function ProfilePage() {
         {data.isSelf && (
           <Link
             to="/profile/settings"
-            className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm hover:bg-surface-2"
+            aria-label="Налаштування"
+            title="Налаштування"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-border p-2 text-sm hover:bg-surface-2 sm:px-3"
           >
             <Settings size={16} />
-            Налаштування
+            <span className="hidden sm:inline">Налаштування</span>
           </Link>
         )}
       </section>
@@ -244,13 +370,11 @@ export default function ProfilePage() {
           ) : (
             <ol className="space-y-2">
               {ranking.top.map((r) => (
-                <li
-                  key={r.userId}
-                  className={clsx(
-                    'flex items-center gap-2 rounded-lg px-2 py-1 text-sm',
-                    r.isMe && 'bg-accent-soft',
-                  )}
-                >
+                <li key={r.userId}>
+                  <RowLink
+                    to={r.canOpen ? (r.isMe ? '/profile' : `/profile/${encodeURIComponent(r.login)}`) : null}
+                    className={clsx('flex items-center gap-2 rounded-lg px-2 py-1 text-sm', r.isMe && 'bg-accent-soft')}
+                  >
                   <span className="w-6 text-center text-muted">{['🥇', '🥈', '🥉'][r.rank - 1] ?? r.rank}</span>
                   <Avatar
                     firstName={r.name.split(' ')[0]}
@@ -263,6 +387,7 @@ export default function ProfilePage() {
                     {r.store && <span className="text-xs text-muted"> · {r.store}</span>}
                   </span>
                   <span className="font-semibold">{r.percent}%</span>
+                  </RowLink>
                 </li>
               ))}
             </ol>
@@ -274,6 +399,8 @@ export default function ProfilePage() {
           )}
         </Card>
       </div>
+
+      {data.hasTeam && <TeamCard />}
 
       {data.knowledge && (
         <Card title="База знань" icon={<BookOpen size={16} className="text-accent" />}>

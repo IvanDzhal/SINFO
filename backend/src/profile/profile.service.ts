@@ -1,14 +1,12 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Scope } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { Actor, scopesFor } from '../knowledge/helpers';
+import { Actor, regionIdsOf } from '../knowledge/helpers';
 import { ItemsService } from '../knowledge/items/items.service';
 import { AttemptsService } from '../testing/attempts.service';
-import { userScopeWhere } from '../testing/visibility';
 import { addDays, kyivDay } from '../presence/day.util';
 import { AvatarService } from './avatar.service';
+import { ProfileAccessService, SELLER_ROLE } from './profile-access.service';
 
-const SELLER_ROLE = 'Продавець';
 const ACTIVITY_LIMIT = 5;
 const RECENT_TESTS_LIMIT = 5;
 const TOP_LIMIT = 10;
@@ -30,22 +28,13 @@ export class ProfileService {
     private items: ItemsService,
     private attempts: AttemptsService,
     private avatars: AvatarService,
+    private access: ProfileAccessService,
   ) {}
 
-  // Чи потрапляє цільовий користувач у scope перегляду глядача за правом `code`
-  private async inScope(viewer: Actor, targetId: string, code: string) {
-    const scopes: Scope[] = await scopesFor(this.prisma, viewer.id, code);
-    if (scopes.length === 0) return false;
-    const found = await this.prisma.user.findFirst({
-      where: { AND: [{ id: targetId }, userScopeWhere(scopes, viewer)] },
-      select: { id: true },
-    });
-    return !!found;
-  }
-
-  async get(viewer: Actor, targetId: string) {
-    const target = await this.prisma.user.findUnique({
-      where: { id: targetId },
+  async get(viewer: Actor, ref: string) {
+    // у посиланнях використовуємо login, але приймаємо й id
+    const target = await this.prisma.user.findFirst({
+      where: { OR: [{ id: ref }, { login: { equals: ref, mode: 'insensitive' } }] },
       select: {
         id: true,
         login: true,
@@ -67,26 +56,19 @@ export class ProfileService {
     if (!target) throw new NotFoundException('Користувача не знайдено');
 
     const self = target.id === viewer.id;
-    const [canKnowledge, canTests] = self
-      ? [true, true]
-      : await Promise.all([
-          this.inScope(viewer, target.id, 'knowledge.view_read_status'),
-          this.inScope(viewer, target.id, 'testing.view_attempts'),
-        ]);
-    if (!canKnowledge && !canTests) throw new ForbiddenException('Немає доступу до цього профілю');
-
     const roleNames = target.roles.map((r) => r.role.name);
     const isSeller = roleNames.includes(SELLER_ROLE);
+    const canOpen = await this.access.canOpen(viewer);
+    if (!canOpen({ id: target.id, regionId: target.regionId, isSeller })) {
+      throw new ForbiddenException('Немає доступу до цього профілю');
+    }
+    const hasTeam = self && (await this.access.level(viewer.id)) !== 'self';
     const actor: Actor = {
       id: target.id,
       regionId: target.regionId,
       storeId: target.storeId,
       managedRegionIds: target.managedRegions.map((m) => m.regionId),
     };
-
-    const showPresence = (await scopesFor(this.prisma, viewer.id, 'analytics.online_status.view')).includes(
-      'GLOBAL',
-    );
 
     const store = target.store;
     const header = {
@@ -101,20 +83,22 @@ export class ProfileService {
       store: store?.name ?? null,
       brand: store?.brandFormat.name ?? null,
       avatarUrl: this.avatars.link(target),
-      lastActivityAt: showPresence ? (target.presence?.lastActivityAt ?? null) : undefined,
+      lastActivityAt: target.presence?.lastActivityAt ?? null,
     };
 
     const [knowledge, tests, activeDays, activity] = await Promise.all([
-      canKnowledge ? this.knowledge(actor) : null,
-      canTests ? this.tests(target.id) : null,
+      this.knowledge(actor),
+      this.tests(target.id),
       this.activeDays(target.id),
       // Активність РМ/Admin показуємо лише власнику
-      self || isSeller ? this.activity(target.id, canKnowledge, canTests) : null,
+      self || isSeller ? this.activity(target.id, true, true) : null,
     ]);
 
     return {
       user: header,
       isSelf: self,
+      // Список продавців показуємо на власному профілі РМ/CEO/Admin
+      hasTeam,
       kpi: {
         instructionsRead: knowledge?.read ?? null,
         testsPassed: tests?.count ?? null,
@@ -126,6 +110,68 @@ export class ProfileService {
       tests: tests?.recent ?? null,
       activity,
     };
+  }
+
+  // Продавці в межах доступу: РМ — свої області, CEO/Admin — вся компанія
+  async team(viewer: Actor) {
+    const level = await this.access.level(viewer.id);
+    if (level === 'self') throw new ForbiddenException('Немає доступу');
+
+    const regionIds = regionIdsOf(viewer);
+    const users = await this.prisma.user.findMany({
+      where: {
+        status: 'active',
+        roles: { some: { role: { name: SELLER_ROLE, archivedAt: null } } },
+        ...(level === 'region' ? { regionId: { in: regionIds.length ? regionIds : ['__none__'] } } : {}),
+      },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+      select: {
+        id: true,
+        login: true,
+        firstName: true,
+        lastName: true,
+        avatarKey: true,
+        avatarUpdatedAt: true,
+        region: { select: { id: true, name: true } },
+        store: { select: { name: true, city: { select: { name: true } } } },
+        presence: { select: { lastActivityAt: true } },
+      },
+    });
+
+    const attempts = users.length
+      ? await this.prisma.testAttempt.findMany({
+          where: {
+            userId: { in: users.map((u) => u.id) },
+            status: 'completed',
+            scorePercent: { not: null },
+          },
+          select: { userId: true, testId: true, scorePercent: true },
+        })
+      : [];
+    const best = new Map<string, Map<string, number>>();
+    for (const a of attempts) {
+      const m = best.get(a.userId) ?? new Map<string, number>();
+      m.set(a.testId, Math.max(m.get(a.testId) ?? 0, a.scorePercent as number));
+      best.set(a.userId, m);
+    }
+
+    const since = Date.now() - 90_000;
+    return users.map((u) => {
+      const scores = [...(best.get(u.id)?.values() ?? [])];
+      return {
+        id: u.id,
+        login: u.login,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        avatarUrl: this.avatars.link(u),
+        region: u.region?.name ?? null,
+        store: u.store?.name ?? null,
+        city: u.store?.city.name ?? null,
+        tests: scores.length,
+        percent: scores.length ? Math.round(scores.reduce((x, y) => x + y, 0) / scores.length) : null,
+        online: !!u.presence && u.presence.lastActivityAt.getTime() >= since,
+      };
+    });
   }
 
   private async knowledge(actor: Actor) {
@@ -245,7 +291,8 @@ export class ProfileService {
   }
 
   // Глобальний TOP-10: середній з найкращих результатів обов'язкових тестів за поточний місяць
-  async ranking(viewerId: string) {
+  async ranking(viewer: Actor) {
+    const canOpen = await this.access.canOpen(viewer);
     const today = kyivDay();
     const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
 
@@ -263,6 +310,8 @@ export class ProfileService {
         scorePercent: true,
         user: {
           select: {
+            login: true,
+            regionId: true,
             firstName: true,
             lastName: true,
             avatarKey: true,
@@ -304,8 +353,10 @@ export class ProfileService {
         name: `${r.user.firstName} ${r.user.lastName}`,
         store: r.user.store?.name ?? null,
         percent: Math.round(r.percent),
+        login: r.user.login,
         avatarUrl: this.avatars.link({ id: r.userId, ...r.user }),
-        isMe: r.userId === viewerId,
+        isMe: r.userId === viewer.id,
+        canOpen: canOpen({ id: r.userId, regionId: r.user.regionId, isSeller: true }),
       }));
 
     return {

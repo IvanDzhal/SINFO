@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import { KnowledgeType, Prisma, VisibilityKind } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { authorWhere, canManageItem, scopesFor } from '../helpers';
+import { AvatarService } from '../../profile/avatar.service';
 
 type Viewer = {
   id: string;
@@ -11,9 +12,17 @@ type Viewer = {
   managedRegionIds?: string[];
 };
 
+const AUTHOR_SELECT = {
+  firstName: true,
+  lastName: true,
+  avatarKey: true,
+  avatarUpdatedAt: true,
+  id: true,
+} as const;
+
 @Injectable()
 export class ItemsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private avatars: AvatarService) {}
 
   async visibleWhere(user: Viewer): Promise<Prisma.KnowledgeItemWhereInput> {
     const roles = await this.prisma.userRole.findMany({
@@ -112,11 +121,25 @@ export class ItemsService {
         description: true,
         isRequired: true,
         publishedAt: true,
-        author: { select: { firstName: true, lastName: true } },
+        author: { select: AUTHOR_SELECT },
         reads: { where: { userId: user.id }, select: { id: true } },
       },
     });
-    return items.map(({ reads, ...rest }) => ({ ...rest, isRead: reads.length > 0 }));
+    return items.map(({ reads, author, ...rest }) => ({
+      ...rest,
+      author: this.publicAuthor(author),
+      isRead: reads.length > 0,
+    }));
+  }
+
+  private publicAuthor(a: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatarKey: string | null;
+    avatarUpdatedAt: Date | null;
+  }) {
+    return { firstName: a.firstName, lastName: a.lastName, avatarUrl: this.avatars.link(a) };
   }
 
   private sign(userId: string, itemId: string, ts: number) {
@@ -130,7 +153,7 @@ export class ItemsService {
     const item = await this.prisma.knowledgeItem.findFirst({
       where: { AND: [where, { id }] },
       include: {
-        author: { select: { firstName: true, lastName: true } },
+        author: { select: AUTHOR_SELECT },
         category: { include: { parent: { select: { name: true } } } },
       },
     });
@@ -143,10 +166,11 @@ export class ItemsService {
     const read = await this.prisma.knowledgeRead.findUnique({
       where: { userId_itemId: { userId: user.id, itemId: id } },
     });
-    const { contentText, ...rest } = item;
+    const { contentText, author, ...rest } = item;
     const ts = Date.now();
     return {
       ...rest,
+      author: this.publicAuthor(author),
       viewsCount: item.viewsCount + 1,
       isRead: !!read,
       readToken: `${ts}.${this.sign(user.id, id, ts)}`,
