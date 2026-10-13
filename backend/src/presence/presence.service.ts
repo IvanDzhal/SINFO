@@ -1,12 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { kyivDay } from './day.util';
 
 @Injectable()
 export class PresenceService {
+  // Останній записаний день активності по користувачу, щоб не писати в БД на кожен ping
+  private lastDay = new Map<string, number>();
+
   constructor(private prisma: PrismaService) {}
 
-  heartbeat(userId: string) {
+  async heartbeat(userId: string) {
     const now = new Date();
+    const day = kyivDay(now);
+    if (this.lastDay.get(userId) !== day.getTime()) {
+      await this.prisma.userActivityDay.upsert({
+        where: { userId_day: { userId, day } },
+        update: {},
+        create: { userId, day },
+      });
+      this.lastDay.set(userId, day.getTime());
+    }
     return this.prisma.userPresence.upsert({
       where: { userId },
       update: { lastActivityAt: now },

@@ -15,7 +15,7 @@ type Viewer = {
 export class ItemsService {
   constructor(private prisma: PrismaService) {}
 
-  private async visibleWhere(user: Viewer): Promise<Prisma.KnowledgeItemWhereInput> {
+  async visibleWhere(user: Viewer): Promise<Prisma.KnowledgeItemWhereInput> {
     const roles = await this.prisma.userRole.findMany({
       where: { userId: user.id, role: { archivedAt: null } },
       select: { roleId: true },

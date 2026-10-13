@@ -19,9 +19,10 @@ import { ManageModule } from './knowledge/manage/manage.module';
 import { FilesModule } from './knowledge/files/files.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { TestingModule } from './testing/testing.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AuditModule, RegionsModule, CitiesModule, BrandsModule, StoresModule, PermissionsModule, RolesModule, UsersModule, DashboardModule, PresenceModule, CategoriesModule, ItemsModule, ManageModule, FilesModule, NotificationsModule, TestingModule],
+  imports: [PrismaModule, AuthModule, AuditModule, RegionsModule, CitiesModule, BrandsModule, StoresModule, PermissionsModule, RolesModule, UsersModule, DashboardModule, PresenceModule, CategoriesModule, ItemsModule, ManageModule, FilesModule, NotificationsModule, TestingModule, ProfileModule],
   controllers: [AppController],
   providers: [AppService],
 })

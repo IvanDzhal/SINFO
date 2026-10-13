@@ -20,5 +20,6 @@ import { TestRemindersService } from './reminders.service';
     AnalyticsService,
     TestRemindersService,
   ],
+  exports: [AttemptsService],
 })
 export class TestingModule {}
