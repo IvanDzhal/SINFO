@@ -1,3 +1,4 @@
+import Avatar from '@/components/Avatar'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Search } from 'lucide-react'
@@ -10,6 +11,7 @@ interface UserRow {
   id: string
   login: string
   firstName: string
+  avatarUrl?: string | null
   lastName: string
   status: string
   roles: { role: { name: string } }[]
@@ -120,7 +122,11 @@ export default function UsersPage() {
           {
             header: "Ім'я",
             render: (u) => (
-              <Link to={`/admin/users/${u.id}`} className="font-medium text-accent hover:underline">
+              <Link
+                to={`/admin/users/${u.id}`}
+                className="inline-flex items-center gap-2 font-medium text-accent hover:underline"
+              >
+                <Avatar firstName={u.firstName} lastName={u.lastName} url={u.avatarUrl} size="sm" />
                 {u.firstName} {u.lastName}
               </Link>
             ),
