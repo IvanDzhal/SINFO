@@ -15,6 +15,7 @@ import {
   X,
   FolderTree,
   ArrowLeft,
+  DatabaseZap,
   type LucideIcon,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -56,7 +57,10 @@ const nav: NavGroup[] = [
   },
   {
     group: 'Система',
-    items: [{ to: '/admin/audit-log', label: 'Журнал дій', icon: ScrollText }],
+    items: [
+      { to: '/admin/data-sync', label: 'Синхронізація даних', icon: DatabaseZap },
+      { to: '/admin/audit-log', label: 'Журнал дій', icon: ScrollText },
+    ],
   },
 
   
@@ -71,6 +75,7 @@ const PERM: Record<string, string> = {
   '/admin/users': 'core.users.view',
   '/admin/roles': 'core.roles.view',
   '/admin/audit-log': 'admin.audit.view',
+  '/admin/data-sync': 'datasync.view',
   '/admin/knowledge/categories': 'knowledge.manage_categories',
 }
 

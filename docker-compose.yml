@@ -24,8 +24,10 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - ./secrets:/run/secrets:ro
     environment:
       - DATABASE_URL=postgresql://sinfo:sinfo_password@db:5432/sinfo_db?schema=public
+      - GOOGLE_CREDENTIALS_PATH=/run/secrets/google-service-account.json
       - JWT_ACCESS_SECRET=change_me_access
       - JWT_REFRESH_SECRET=change_me_refresh
       - REDIS_URL=redis://redis:6379

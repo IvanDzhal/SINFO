@@ -51,3 +51,12 @@ Thumbs.db
 tmp/
 
 docker-compose.override.yml
+# Секрети (ключі service account тощо)
+secrets/*
+!secrets/README.md
+!secrets/.gitkeep
+*service-account*.json
+credentials.json
+
+# ID Google-таблиць (репозиторій публічний)
+backend/prisma/data/legacy-shops.ts

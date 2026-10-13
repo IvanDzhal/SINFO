@@ -12,7 +12,6 @@ import {
   Settings,
   Sun,
   TrendingUp,
-  Wallet,
   X,
   type LucideIcon,
 } from 'lucide-react'
@@ -42,7 +41,6 @@ const nav: NavItem[] = [
     icon: TrendingUp,
     perms: ['analytics.sales.view', 'analytics.content.view'],
   },
-  { to: '/extra-sales', label: 'Додаткові продажі', icon: Wallet },
 ]
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>

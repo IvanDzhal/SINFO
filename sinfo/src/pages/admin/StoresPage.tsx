@@ -9,6 +9,7 @@ import { useFetch } from '@/hooks/useFetch'
 interface Store {
   id: string
   name: string
+  code: string | null
   address: string | null
   status: string
   regionId: string
@@ -38,6 +39,7 @@ export default function StoresPage() {
         }
         columns={[
           { header: 'Назва', render: (r) => r.name },
+          { header: 'Код', render: (r) => r.code ?? '—' },
           { header: 'Бренд', render: (r) => r.brandFormat.name },
           { header: 'Область', render: (r) => r.region.name },
           { header: 'Місто', render: (r) => r.city.name },
@@ -52,6 +54,7 @@ export default function StoresPage() {
                 perm="core.stores.edit"
                 fields={[
                   { name: 'name', label: 'Назва', required: true },
+                  { name: 'code', label: 'Короткий код (напр. ЗАБ)' },
                   {
                     name: 'brandFormatId',
                     label: 'Бренд / формат',
@@ -78,6 +81,7 @@ export default function StoresPage() {
                 ]}
                 initial={{
                   name: r.name,
+                  code: r.code ?? '',
                   brandFormatId: r.brandFormatId,
                   regionId: r.regionId,
                   cityId: r.cityId,
@@ -96,6 +100,7 @@ export default function StoresPage() {
           endpoint="/core/stores"
           fields={[
             { name: 'name', label: 'Назва', required: true },
+            { name: 'code', label: 'Короткий код (напр. ЗАБ)' },
             {
               name: 'brandFormatId',
               label: 'Бренд / формат',

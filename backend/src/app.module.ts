@@ -21,9 +21,11 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { TestingModule } from './testing/testing.module';
 import { ProfileModule } from './profile/profile.module';
 import { AvatarModule } from './profile/avatar.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { DataSyncModule } from './datasync/datasync.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AuditModule, RegionsModule, CitiesModule, BrandsModule, StoresModule, PermissionsModule, RolesModule, UsersModule, DashboardModule, PresenceModule, CategoriesModule, ItemsModule, ManageModule, FilesModule, NotificationsModule, TestingModule, ProfileModule, AvatarModule],
+  imports: [PrismaModule, AuthModule, AuditModule, RegionsModule, CitiesModule, BrandsModule, StoresModule, PermissionsModule, RolesModule, UsersModule, DashboardModule, PresenceModule, CategoriesModule, ItemsModule, ManageModule, FilesModule, NotificationsModule, TestingModule, ProfileModule, AvatarModule, AnalyticsModule, DataSyncModule],
   controllers: [AppController],
   providers: [AppService],
 })

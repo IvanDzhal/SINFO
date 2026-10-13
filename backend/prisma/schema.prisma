@@ -129,6 +129,11 @@ model Store {
   city          City        @relation(fields: [cityId], references: [id])
   brandFormat   BrandFormat @relation(fields: [brandFormatId], references: [id])
   users         User[]
+  // Короткий код магазину (ЗАБ, СТЛ…): його використовують працівники й імпорт
+  code          String?     @unique
+  dataSource    DataSource?
+  salesSnapshots SalesSnapshot[]
+  salesMetrics  SalesMetric[]
 }
 
 model UserRegion {
@@ -428,4 +433,123 @@ model TestAnswer {
 
   @@unique([attemptId, questionId])
   @@index([questionId])
+}
+
+// ───────── Data Sync / Sales (DATA_SYNC_v1.1, ANALYTICS_v1 §5–14) ─────────
+
+enum SyncStatus {
+  pending
+  running
+  success
+  partial
+  failed
+}
+
+// Джерело даних магазину (v1: одна таблиця на магазин)
+model DataSource {
+  id                   String        @id @default(uuid())
+  storeId              String        @unique
+  provider             String        @default("google_sheets")
+  externalId           String
+  sheetName            String?
+  status               String        @default("active")
+  lastSyncAt           DateTime?
+  lastSuccessfulSyncAt DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  store                Store         @relation(fields: [storeId], references: [id])
+  mappings             DataMapping[]
+  runs                 SyncRun[]
+  snapshots            SalesSnapshot[]
+  metrics              SalesMetric[]
+}
+
+// Звідки брати показник. key: plan.TO | fact.TO | day.TO | meta.days_passed | meta.days_left
+// cells — A1-посилання; кілька комірок підсумовуються.
+model DataMapping {
+  id        String     @id @default(uuid())
+  sourceId  String
+  key       String
+  cells     String[]
+  source    DataSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, key])
+}
+
+// Конфігуровані метрики (базові й ефективність). thresholds — кольорова градація.
+model SalesMetricDef {
+  id             String        @id @default(uuid())
+  code           String        @unique
+  name           String
+  shortName      String
+  kind           String        @default("base")
+  unit           String        @default("currency")
+  numerator      String?
+  denominator    String?
+  thresholds     Json?
+  active         Boolean       @default(true)
+  displayOrder   Int           @default(0)
+  metrics        SalesMetric[]
+}
+
+model SyncRun {
+  id             String     @id @default(uuid())
+  sourceId       String
+  trigger        String     @default("auto")
+  status         SyncStatus @default(pending)
+  startedAt      DateTime   @default(now())
+  finishedAt     DateTime?
+  recordsRead    Int        @default(0)
+  recordsSaved   Int        @default(0)
+  recordsUpdated Int        @default(0)
+  errorsCount    Int        @default(0)
+  errorMessage   String?
+  details        Json?
+  triggeredById  String?
+  source         DataSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  snapshots      SalesSnapshot[]
+  metrics        SalesMetric[]
+
+  @@index([sourceId, startedAt])
+}
+
+// Зріз таблиці магазину на дату: службові поля й raw-значення для діагностики
+model SalesSnapshot {
+  id         String      @id @default(uuid())
+  storeId    String
+  date       DateTime    @db.Date
+  daysPassed Int?
+  daysLeft   Int?
+  raw        Json
+  sourceId   String?
+  syncId     String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  store      Store       @relation(fields: [storeId], references: [id])
+  source     DataSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  sync       SyncRun?    @relation(fields: [syncId], references: [id], onDelete: SetNull)
+
+  @@unique([storeId, date])
+}
+
+// plan/fact накопичувальні за місяць, dayFact — продаж за день; null = значення не прочитано
+model SalesMetric {
+  id         String         @id @default(uuid())
+  storeId    String
+  date       DateTime       @db.Date
+  metricCode String
+  plan       Float?
+  fact       Float?
+  dayFact    Float?
+  sourceId   String?
+  syncId     String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  store      Store          @relation(fields: [storeId], references: [id])
+  metric     SalesMetricDef @relation(fields: [metricCode], references: [code])
+  source     DataSource?    @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  sync       SyncRun?       @relation(fields: [syncId], references: [id], onDelete: SetNull)
+
+  @@unique([storeId, date, metricCode])
+  @@index([date, metricCode])
 }
