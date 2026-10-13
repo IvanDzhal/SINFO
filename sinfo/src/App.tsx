@@ -23,11 +23,11 @@ import TestingPage from '@/pages/TestingPage'
 import TestDetailPage from '@/pages/TestDetailPage'
 import TestAttemptPage from '@/pages/TestAttemptPage'
 import TestAnalyticsPage from '@/pages/TestAnalyticsPage'
+import AboutPage from '@/pages/AboutPage'
 import ProfilePage from '@/pages/ProfilePage'
 import ProfileSettingsPage from '@/pages/ProfileSettingsPage'
 
 const stubs = [
-  { path: 'about', title: 'Про компанію' },
   { path: 'training', title: 'Навчання' },
   { path: 'analytics', title: 'Аналітика' },
   { path: 'extra-sales', title: 'Додаткові продажі' },
@@ -51,6 +51,7 @@ function App() {
             <Route path="knowledge/:id" element={<KnowledgeArticlePage />} />
             <Route path="knowledge/new" element={<KnowledgeEditPage />} />
             <Route path="knowledge/:id/edit" element={<KnowledgeEditPage />} />
+            <Route path="about" element={<AboutPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="profile/settings" element={<ProfileSettingsPage />} />
             <Route path="profile/:id" element={<ProfilePage />} />
