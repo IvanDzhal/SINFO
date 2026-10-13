@@ -224,6 +224,8 @@ function NewsCard({ items, loading }: { items: NewsItem[]; loading: boolean }) {
 
 interface OnlineUser {
   id: string
+  login: string
+  canOpen: boolean
   firstName: string
   lastName: string
   avatarUrl: string | null
@@ -231,7 +233,27 @@ interface OnlineUser {
   region: string | null
 }
 
+function OnlineRow({
+  user: u,
+  meId,
+  children,
+}: {
+  user: OnlineUser
+  meId?: string
+  children: React.ReactNode
+}) {
+  const cls = 'flex items-center gap-3 border-t border-border px-4 py-2.5'
+  if (!u.canOpen) return <div className={cls}>{children}</div>
+  const to = u.id === meId ? '/profile' : `/profile/${encodeURIComponent(u.login)}`
+  return (
+    <Link to={to} className={`${cls} hover:bg-surface-2`}>
+      {children}
+    </Link>
+  )
+}
+
 function OnlineCard() {
+  const user = useAuthStore((s) => s.user)
   const [users, setUsers] = useState<OnlineUser[]>([])
   const [hidden, setHidden] = useState(false)
 
@@ -262,7 +284,7 @@ function OnlineCard() {
         </p>
       )}
       {users.map((u) => (
-        <div key={u.id} className="flex items-center gap-3 border-t border-border px-4 py-2.5">
+        <OnlineRow key={u.id} user={u} meId={user?.id}>
           <span className="relative shrink-0">
             <Avatar firstName={u.firstName} lastName={u.lastName} url={u.avatarUrl} />
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-success" />
@@ -273,7 +295,7 @@ function OnlineCard() {
             </p>
             <p className="truncate text-xs text-muted">{u.store ?? u.region ?? '—'}</p>
           </div>
-        </div>
+        </OnlineRow>
       ))}
     </div>
   )
