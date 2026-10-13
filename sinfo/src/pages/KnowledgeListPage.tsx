@@ -4,6 +4,7 @@ import { Check, Clock, FileText, Plus } from 'lucide-react'
 import clsx from 'clsx'
 import { useFetch } from '@/hooks/useFetch'
 import { useCan } from '@/hooks/useCan'
+import { categorySlug, resolveCategoryId } from '@/utils/categorySlug'
 
 type ItemType = 'instruction' | 'material' | 'news'
 type Mode = 'published' | 'draft' | 'archived'
@@ -68,17 +69,18 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
   const items = useFetch<Item>(url)
   const cats = useFetch<Category>('/knowledge/categories')
   const [params, setParams] = useSearchParams()
-  const category = params.get('category') ?? 'all'
+  const category = resolveCategoryId(params.get('category'), cats.data) ?? 'all'
   const [unread, setUnread] = useState(false)
   const [sort, setSort] = useState('new')
 
-  const sub = params.get('sub')
+  const sub = resolveCategoryId(
+    params.get('sub'),
+    cats.data.filter((c) => c.parentId === category),
+  )
 
-  function pickCategory(key: string, subKey?: string) {
-    const next: Record<string, string> = {}
-    if (key !== 'all') next.category = key
-    if (key !== 'all' && subKey) next.sub = subKey
-    setParams(next, { replace: true })
+  function pickCategory(key: string) {
+    const root = cats.data.find((c) => c.id === key)
+    setParams(root ? { category: categorySlug(root.name) } : {}, { replace: true })
   }
 
   function changeMode(next: Mode) {

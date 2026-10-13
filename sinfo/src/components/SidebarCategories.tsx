@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { ChevronDown, Folder } from 'lucide-react'
 import clsx from 'clsx'
 import { useFetch } from '@/hooks/useFetch'
+import { categorySlug, resolveCategoryId } from '@/utils/categorySlug'
 
 interface SubCat {
   id: string
@@ -28,8 +29,11 @@ export default function SidebarCategories({ onNavigate }: { onNavigate: () => vo
   }, [pathname])
 
   const params = new URLSearchParams(search)
-  const active = pathname === base ? params.get('category') : null
-  const activeSub = pathname === base ? params.get('sub') : null
+  const active = pathname === base ? resolveCategoryId(params.get('category'), data) : null
+  const activeSub =
+    pathname === base && active
+      ? resolveCategoryId(params.get('sub'), data.find((c) => c.id === active)?.children ?? [])
+      : null
   if (data.length === 0) return null
 
   return (
@@ -41,7 +45,7 @@ export default function SidebarCategories({ onNavigate }: { onNavigate: () => vo
         return (
           <div key={c.id}>
             <Link
-              to={`${base}?category=${c.id}`}
+              to={`${base}?category=${categorySlug(c.name)}`}
               onClick={onNavigate}
               aria-expanded={subs.length > 0 ? expanded : undefined}
               className={clsx(
@@ -68,7 +72,7 @@ export default function SidebarCategories({ onNavigate }: { onNavigate: () => vo
                 {subs.map((s) => (
                   <Link
                     key={s.id}
-                    to={`${base}?category=${c.id}&sub=${s.id}`}
+                    to={`${base}?category=${categorySlug(c.name)}&sub=${categorySlug(s.name)}`}
                     onClick={onNavigate}
                     className={clsx(
                       'flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm',
