@@ -56,12 +56,23 @@ interface Profile {
 
 interface Ranking {
   period: string
-  top: { rank: number; userId: string; name: string; store: string | null; percent: number; avatarUrl: string | null; isMe: boolean }[]
+  top: {
+    rank: number
+    userId: string
+    login: string
+    name: string
+    store: string | null
+    percent: number
+    avatarUrl: string | null
+    isMe: boolean
+    canOpen: boolean
+  }[]
   me: { rank: number; name: string; percent: number } | null
 }
 
 interface TeamMember {
   id: string
+  login: string
   firstName: string
   lastName: string
   avatarUrl: string | null
@@ -168,7 +179,7 @@ function TeamCard() {
             <ul className="max-h-96 divide-y divide-border overflow-y-auto">
               {shown.map((m) => (
                 <li key={m.id}>
-                  <Link to={`/profile/${m.id}`} className="flex items-center gap-3 py-2 hover:bg-surface-2">
+                  <Link to={`/profile/${encodeURIComponent(m.login)}`} className="flex items-center gap-3 py-2 hover:bg-surface-2">
                     <span className="relative shrink-0">
                       <Avatar firstName={m.firstName} lastName={m.lastName} url={m.avatarUrl} />
                       {m.online && (
@@ -199,6 +210,16 @@ function TeamCard() {
         </>
       )}
     </Card>
+  )
+}
+
+// Рядок-посилання, якщо профіль доступний; інакше звичайний блок
+function RowLink({ to, className, children }: { to: string | null; className?: string; children: React.ReactNode }) {
+  if (!to) return <div className={className}>{children}</div>
+  return (
+    <Link to={to} className={clsx(className, 'hover:bg-surface-2')}>
+      {children}
+    </Link>
   )
 }
 
@@ -349,13 +370,11 @@ export default function ProfilePage() {
           ) : (
             <ol className="space-y-2">
               {ranking.top.map((r) => (
-                <li
-                  key={r.userId}
-                  className={clsx(
-                    'flex items-center gap-2 rounded-lg px-2 py-1 text-sm',
-                    r.isMe && 'bg-accent-soft',
-                  )}
-                >
+                <li key={r.userId}>
+                  <RowLink
+                    to={r.canOpen ? (r.isMe ? '/profile' : `/profile/${encodeURIComponent(r.login)}`) : null}
+                    className={clsx('flex items-center gap-2 rounded-lg px-2 py-1 text-sm', r.isMe && 'bg-accent-soft')}
+                  >
                   <span className="w-6 text-center text-muted">{['🥇', '🥈', '🥉'][r.rank - 1] ?? r.rank}</span>
                   <Avatar
                     firstName={r.name.split(' ')[0]}
@@ -368,6 +387,7 @@ export default function ProfilePage() {
                     {r.store && <span className="text-xs text-muted"> · {r.store}</span>}
                   </span>
                   <span className="font-semibold">{r.percent}%</span>
+                  </RowLink>
                 </li>
               ))}
             </ol>

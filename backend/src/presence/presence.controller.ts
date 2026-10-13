@@ -16,7 +16,7 @@ export class PresenceController {
   // Онлайн бачать усі авторизовані користувачі
   @UseGuards(JwtAuthGuard)
   @Get('online')
-  online() {
-    return this.service.online();
+  online(@Req() req: any) {
+    return this.service.online(req.user);
   }
 }

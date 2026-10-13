@@ -5,13 +5,8 @@ import { ItemsService } from '../knowledge/items/items.service';
 import { AttemptsService } from '../testing/attempts.service';
 import { addDays, kyivDay } from '../presence/day.util';
 import { AvatarService } from './avatar.service';
+import { ProfileAccessService, SELLER_ROLE } from './profile-access.service';
 
-const SELLER_ROLE = 'Продавець';
-const GLOBAL_ROLES = ['CEO', 'Адмін'];
-const REGION_ROLE = 'Регіональний менеджер';
-
-// self — лише власний профіль; region — продавці своїх областей; global — усі
-type Level = 'self' | 'region' | 'global';
 const ACTIVITY_LIMIT = 5;
 const RECENT_TESTS_LIMIT = 5;
 const TOP_LIMIT = 10;
@@ -33,22 +28,13 @@ export class ProfileService {
     private items: ItemsService,
     private attempts: AttemptsService,
     private avatars: AvatarService,
+    private access: ProfileAccessService,
   ) {}
 
-  private async level(userId: string): Promise<Level> {
-    const roles = await this.prisma.userRole.findMany({
-      where: { userId, role: { archivedAt: null } },
-      select: { role: { select: { name: true } } },
-    });
-    const names = roles.map((r) => r.role.name);
-    if (names.some((n) => GLOBAL_ROLES.includes(n))) return 'global';
-    if (names.includes(REGION_ROLE)) return 'region';
-    return 'self';
-  }
-
-  async get(viewer: Actor, targetId: string) {
-    const target = await this.prisma.user.findUnique({
-      where: { id: targetId },
+  async get(viewer: Actor, ref: string) {
+    // у посиланнях використовуємо login, але приймаємо й id
+    const target = await this.prisma.user.findFirst({
+      where: { OR: [{ id: ref }, { login: { equals: ref, mode: 'insensitive' } }] },
       select: {
         id: true,
         login: true,
@@ -70,19 +56,13 @@ export class ProfileService {
     if (!target) throw new NotFoundException('Користувача не знайдено');
 
     const self = target.id === viewer.id;
-    const viewerLevel = self ? 'global' : await this.level(viewer.id);
-    const targetIsSeller = target.roles.some((r) => r.role.name === SELLER_ROLE);
-    const allowed =
-      self ||
-      viewerLevel === 'global' ||
-      (viewerLevel === 'region' &&
-        targetIsSeller &&
-        !!target.regionId &&
-        regionIdsOf(viewer).includes(target.regionId));
-    if (!allowed) throw new ForbiddenException('Немає доступу до цього профілю');
-
     const roleNames = target.roles.map((r) => r.role.name);
     const isSeller = roleNames.includes(SELLER_ROLE);
+    const canOpen = await this.access.canOpen(viewer);
+    if (!canOpen({ id: target.id, regionId: target.regionId, isSeller })) {
+      throw new ForbiddenException('Немає доступу до цього профілю');
+    }
+    const hasTeam = self && (await this.access.level(viewer.id)) !== 'self';
     const actor: Actor = {
       id: target.id,
       regionId: target.regionId,
@@ -118,7 +98,7 @@ export class ProfileService {
       user: header,
       isSelf: self,
       // Список продавців показуємо на власному профілі РМ/CEO/Admin
-      hasTeam: self && viewerLevel !== 'self',
+      hasTeam,
       kpi: {
         instructionsRead: knowledge?.read ?? null,
         testsPassed: tests?.count ?? null,
@@ -134,7 +114,7 @@ export class ProfileService {
 
   // Продавці в межах доступу: РМ — свої області, CEO/Admin — вся компанія
   async team(viewer: Actor) {
-    const level = await this.level(viewer.id);
+    const level = await this.access.level(viewer.id);
     if (level === 'self') throw new ForbiddenException('Немає доступу');
 
     const regionIds = regionIdsOf(viewer);
@@ -147,6 +127,7 @@ export class ProfileService {
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
       select: {
         id: true,
+        login: true,
         firstName: true,
         lastName: true,
         avatarKey: true,
@@ -179,6 +160,7 @@ export class ProfileService {
       const scores = [...(best.get(u.id)?.values() ?? [])];
       return {
         id: u.id,
+        login: u.login,
         firstName: u.firstName,
         lastName: u.lastName,
         avatarUrl: this.avatars.link(u),
@@ -309,7 +291,8 @@ export class ProfileService {
   }
 
   // Глобальний TOP-10: середній з найкращих результатів обов'язкових тестів за поточний місяць
-  async ranking(viewerId: string) {
+  async ranking(viewer: Actor) {
+    const canOpen = await this.access.canOpen(viewer);
     const today = kyivDay();
     const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
 
@@ -327,6 +310,8 @@ export class ProfileService {
         scorePercent: true,
         user: {
           select: {
+            login: true,
+            regionId: true,
             firstName: true,
             lastName: true,
             avatarKey: true,
@@ -368,8 +353,10 @@ export class ProfileService {
         name: `${r.user.firstName} ${r.user.lastName}`,
         store: r.user.store?.name ?? null,
         percent: Math.round(r.percent),
+        login: r.user.login,
         avatarUrl: this.avatars.link({ id: r.userId, ...r.user }),
-        isMe: r.userId === viewerId,
+        isMe: r.userId === viewer.id,
+        canOpen: canOpen({ id: r.userId, regionId: r.user.regionId, isSeller: true }),
       }));
 
     return {
