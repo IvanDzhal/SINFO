@@ -26,6 +26,7 @@ const permissionCodes = [
   'core.stores.view', 'core.stores.create', 'core.stores.edit',
   'core.brands.view', 'core.brands.create', 'core.brands.edit',
   'datasync.view', 'datasync.manage', 'datasync.run',
+  'training.view', 'training.manage', 'training.view_analytics',
 ];
 
 const roleNames = ['Гість', 'Стажер', 'Продавець', 'Регіональний менеджер', 'CEO', 'Адмін'];

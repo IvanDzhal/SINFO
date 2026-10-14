@@ -8,6 +8,7 @@ import { computeStatus } from './status';
 import { parseAccepted, toQuestionData, validateQuestion } from './validation';
 import { testVisibleWhere } from './visibility';
 import { NotificationsService } from '../notifications/notifications.service';
+import { notifyIfCompleted, testGate } from '../training/progress';
 
 @Injectable()
 export class AttemptsService {
@@ -83,6 +84,10 @@ export class AttemptsService {
       else if (myStatus === 'passed') blockedReason = 'Тест успішно пройдено';
       else if (myStatus === 'failed') blockedReason = 'Усі спроби вичерпано';
       else if (myStatus === 'overdue') blockedReason = 'Термін проходження минув';
+      else {
+        const gate = await testGate(this.prisma, user.id, testId);
+        if (gate && !gate.ok) blockedReason = gate.reason;
+      }
     }
 
     return {
@@ -110,6 +115,9 @@ export class AttemptsService {
     const test = await this.prisma.test.findFirst({ where: { AND: [{ id: testId }, visible] } });
     if (!test) throw new NotFoundException('Тест не знайдено');
     await this.finalizeExpired(user.id);
+
+    const gate = await testGate(this.prisma, user.id, testId);
+    if (gate && !gate.ok) throw new BadRequestException(gate.reason);
 
     const now = new Date();
     if (test.deadline && test.deadline <= now) {
@@ -367,6 +375,7 @@ export class AttemptsService {
           itemId: attemptId,
         })
         .catch(() => 0);
+      if (passed) await notifyIfCompleted(this.prisma, attempt.userId).catch(() => undefined);
     }
   }
 

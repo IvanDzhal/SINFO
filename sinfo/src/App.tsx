@@ -26,13 +26,14 @@ import TestDetailPage from '@/pages/TestDetailPage'
 import TestAttemptPage from '@/pages/TestAttemptPage'
 import TestAnalyticsPage from '@/pages/TestAnalyticsPage'
 import AnalyticsPage from '@/pages/AnalyticsPage'
+import TrainingPage from '@/pages/TrainingPage'
+import TrainingLessonPage from '@/pages/TrainingLessonPage'
+import TrainingManagePage from '@/pages/TrainingManagePage'
 import AboutPage from '@/pages/AboutPage'
 import ProfilePage from '@/pages/ProfilePage'
 import ProfileSettingsPage from '@/pages/ProfileSettingsPage'
 
-const stubs = [
-  { path: 'training', title: 'Навчання' },
-]
+const stubs: { path: string; title: string }[] = []
 
 function App() {
   return (
@@ -47,6 +48,9 @@ function App() {
             <Route path="testing/:id" element={<TestDetailPage />} />
             <Route path="testing/attempt/:attemptId" element={<TestAttemptPage />} />
             <Route path="testing/analytics" element={<TestAnalyticsPage />} />
+            <Route path="training" element={<TrainingPage />} />
+            <Route path="training/lesson/:id" element={<TrainingLessonPage />} />
+            <Route path="training/manage" element={<TrainingManagePage />} />
             <Route path="news" element={<KnowledgeListPage key="news" type="news" />} />
             <Route path="materials" element={<KnowledgeListPage key="material" type="material" />} />
             <Route path="knowledge/:id" element={<KnowledgeArticlePage />} />

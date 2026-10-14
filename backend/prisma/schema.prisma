@@ -51,6 +51,7 @@ model User {
   notifications Notification[]
   createdTests Test[]
   testAttempts TestAttempt[]
+  trainingDone TrainingLessonDone[]
 }
 
 model Role {
@@ -287,6 +288,7 @@ model KnowledgeFile {
   uploadedById String
   uploadedBy   User           @relation(fields: [uploadedById], references: [id])
   createdAt    DateTime       @default(now())
+  trainingLessons TrainingLesson[]
 
   @@index([itemId])
 }
@@ -350,6 +352,7 @@ model Test {
   questions           TestQuestion[]
   visibility          TestVisibility[]
   attempts TestAttempt[]
+  trainingStages TrainingStage[]
 
   @@index([status])
 }
@@ -552,4 +555,70 @@ model SalesMetric {
 
   @@unique([storeId, date, metricCode])
   @@index([date, metricCode])
+}
+
+
+// ───────── Навчання (етапи → уроки → тест) ─────────
+
+// Етап програми навчання. Відкривається, коли попередній етап повністю пройдено.
+model TrainingStage {
+  id          String     @id @default(uuid())
+  title       String
+  description String     @default("")
+  position    Int        @default(0)
+  status      TestStatus @default(draft)
+  testId      String?
+  test        Test?      @relation(fields: [testId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  lessons     TrainingLesson[]
+
+  @@index([status, position])
+}
+
+// kind: text (BlockNote JSON у content) | video (посилання YouTube) | pdf (KnowledgeFile)
+model TrainingLesson {
+  id         String         @id @default(uuid())
+  stageId    String
+  stage      TrainingStage  @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  position   Int            @default(0)
+  kind       String
+  title      String
+  content    Json?
+  videoUrl   String?
+  fileId     String?
+  file       KnowledgeFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  version    Int            @default(1)
+  archivedAt DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  done       TrainingLessonDone[]
+  versions   TrainingLessonVersion[]
+
+  @@index([stageId, position])
+}
+
+model TrainingLessonVersion {
+  id        String         @id @default(uuid())
+  lessonId  String
+  version   Int
+  title     String
+  content   Json?
+  videoUrl  String?
+  fileId    String?
+  authorId  String
+  createdAt DateTime       @default(now())
+  lesson    TrainingLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, version])
+}
+
+model TrainingLessonDone {
+  userId   String
+  lessonId String
+  doneAt   DateTime       @default(now())
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson   TrainingLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@id([userId, lessonId])
 }

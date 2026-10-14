@@ -68,6 +68,12 @@ export class FilesService {
     return { url: `/knowledge/files/${id}/raw?exp=${exp}&sig=${this.sign(id, exp)}` };
   }
 
+  // Підписане посилання без перевірки доступу: викликати лише після власної перевірки прав
+  rawUrl(id: string, inline = false) {
+    const exp = Date.now() + LINK_TTL_MS;
+    return `/knowledge/files/${id}/raw?exp=${exp}&sig=${this.sign(id, exp)}${inline ? '&inline=1' : ''}`;
+  }
+
   async open(id: string, exp: string, sig: string) {
     const expNum = Number(exp);
     const expected = this.sign(id, expNum);

@@ -33,7 +33,7 @@ const nav: NavItem[] = [
   { to: '/', label: 'Головна', icon: Home, end: true },
   { to: '/instructions', label: 'Інструкції', icon: BookOpen, perms: ['knowledge.view'] },
   { to: '/materials', label: 'Робочі матеріали', icon: Briefcase, perms: ['knowledge.view'] },
-  { to: '/training', label: 'Навчання', icon: GraduationCap },
+  { to: '/training', label: 'Навчання', icon: GraduationCap, perms: ['training.view', 'training.manage'] },
   { to: '/testing', label: 'Тестування', icon: ClipboardCheck, perms: ['testing.view'] },
   {
     to: '/analytics',
