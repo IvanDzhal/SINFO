@@ -1,10 +1,10 @@
-import { ArrayMinSize, IsArray, IsIn, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { ArrayMinSize, IsArray, IsIn, IsOptional, IsString, IsUUID, MinLength, MaxLength } from 'class-validator';
 
 export class CreateUserDto {
   @IsString() @MinLength(2) firstName!: string;
   @IsString() @MinLength(2) lastName!: string;
   @IsString() @MinLength(3) login!: string;
-  @IsString() @MinLength(6) password!: string;
+  @IsString() @MinLength(8) @MaxLength(128) password!: string;
   @IsArray() @ArrayMinSize(1) @IsUUID('4', { each: true }) roleIds!: string[];
   @IsOptional() @IsUUID() regionId?: string;
   @IsOptional() @IsUUID() cityId?: string;
@@ -23,7 +23,7 @@ export class UpdateUserDto {
 }
 
 export class ResetPasswordDto {
-  @IsString() @MinLength(6) newPassword!: string;
+  @IsString() @MinLength(8) @MaxLength(128) newPassword!: string;
 }
 
 export class ChangeLoginDto {

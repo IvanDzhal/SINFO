@@ -1,6 +1,8 @@
+import { accessSecret, refreshSecret } from '../config/secrets';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -11,11 +13,10 @@ export class AuthService {
     const user = await this.prisma.user.findFirst({
       where: { login: { equals: login.trim(), mode: 'insensitive' } },
     });
-    if (
-      !user ||
-      user.status !== 'active' ||
-      !(await argon2.verify(user.passwordHash, password))
-    ) {
+    // Хеш перевіряємо завжди — однаковий час відповіді для неіснуючого логіна
+    const hash = user?.passwordHash ?? (await this.dummyHash());
+    const ok = await argon2.verify(hash, password);
+    if (!user || user.status !== 'active' || !ok) {
       throw new UnauthorizedException('Невірний логін або пароль');
     }
     await this.prisma.user.update({
@@ -25,11 +26,17 @@ export class AuthService {
     return this.issueTokens(user.id, user.login);
   }
 
+  private dummy?: Promise<string>;
+  private dummyHash() {
+    return (this.dummy ??= argon2.hash(randomBytes(16).toString('hex')));
+  }
+
   async refresh(refreshToken: string) {
     try {
       const payload = await this.jwt.verifyAsync(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: refreshSecret(),
       });
+      if (payload.typ !== 'refresh') throw new Error();
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user || user.status !== 'active') throw new Error();
       return this.issueTokens(user.id, user.login);
@@ -47,14 +54,13 @@ export class AuthService {
   }
 
   private async issueTokens(sub: string, login: string) {
-    const payload = { sub, login };
     return {
-      accessToken: await this.jwt.signAsync(payload, {
-        secret: process.env.JWT_ACCESS_SECRET,
+      accessToken: await this.jwt.signAsync({ sub, login, typ: 'access' }, {
+        secret: accessSecret(),
         expiresIn: '15m',
       }),
-      refreshToken: await this.jwt.signAsync(payload, {
-        secret: process.env.JWT_REFRESH_SECRET,
+      refreshToken: await this.jwt.signAsync({ sub, login, typ: 'refresh' }, {
+        secret: refreshSecret(),
         expiresIn: '7d',
       }),
     };

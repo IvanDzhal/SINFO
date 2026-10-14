@@ -1,29 +1,34 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AuthController } from '../src/auth/auth.controller';
+import { AuthService } from '../src/auth/auth.service';
 
-describe('AppController (e2e)', () => {
+// Перевіряємо HTTP-шар auth без БД: валідація DTO та rate-limit на логіні.
+describe('Auth (e2e, без БД)', () => {
   let app: INestApplication<App>;
+  const login = jest.fn().mockRejectedValue(new Error('x'));
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+  beforeAll(async () => {
+    const mod = await Test.createTestingModule({
+      imports: [ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }])],
+      controllers: [AuthController],
+      providers: [{ provide: AuthService, useValue: { login, refresh: jest.fn() } }],
     }).compile();
-
-    app = moduleFixture.createNestApplication();
+    app = mod.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
   });
+  afterAll(() => app.close());
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
-  });
+  it('відхиляє тіло без полів (400)', () =>
+    request(app.getHttpServer()).post('/auth/login').send({}).expect(400));
 
-  afterEach(async () => {
-    await app.close();
-  });
+  it('відхиляє надто довгий пароль (400)', () =>
+    request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ login: 'a', password: 'x'.repeat(500) })
+      .expect(400));
 });

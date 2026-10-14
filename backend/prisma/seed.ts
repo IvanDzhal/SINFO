@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { PrismaClient, Scope } from '@prisma/client';
 import * as argon2 from 'argon2';
 
@@ -49,12 +50,15 @@ async function main() {
     });
   }
 
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? randomBytes(16).toString('base64url');
+  if (!process.env.SEED_ADMIN_PASSWORD) console.log('Згенеровано пароль admin (збережіть):', adminPassword);
+
   const admin = await prisma.user.upsert({
     where: { login: 'admin' },
     update: {},
     create: {
       login: 'admin',
-      passwordHash: await argon2.hash('ChangeMe123!'),
+      passwordHash: await argon2.hash(adminPassword),
       firstName: 'Іван',
       lastName: 'Admin',
     },

@@ -1,3 +1,4 @@
+import { signingSecret } from '../config/secrets';
 import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createHash } from 'crypto';
@@ -51,7 +52,7 @@ export function pickRandom<T>(items: T[], count: number): T[] {
 // Права частина пари для користувача: одноразовий код замість id, щоб пару не можна було вгадати
 export function rightToken(attemptId: string, optionId: string): string {
   return createHash('sha256')
-    .update(`${process.env.JWT_ACCESS_SECRET ?? 'dev'}:${attemptId}:${optionId}`)
+    .update(`${signingSecret()}:${attemptId}:${optionId}`)
     .digest('hex')
     .slice(0, 12);
 }

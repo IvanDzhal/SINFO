@@ -1,3 +1,4 @@
+import { signingSecret } from '../config/secrets';
 import {
   BadRequestException,
   ForbiddenException,
@@ -17,7 +18,7 @@ export class AvatarService {
   constructor(private prisma: PrismaService, private storage: StorageService) {}
 
   private sign(userId: string, exp: number) {
-    return createHmac('sha256', process.env.JWT_ACCESS_SECRET ?? 'dev')
+    return createHmac('sha256', signingSecret())
       .update(`avatar:${userId}:${exp}`)
       .digest('hex');
   }

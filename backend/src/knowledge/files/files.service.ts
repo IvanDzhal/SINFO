@@ -1,3 +1,4 @@
+import { signingSecret } from '../../config/secrets';
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -17,7 +18,7 @@ export class FilesService {
   ) {}
 
   private sign(id: string, exp: number) {
-    return createHmac('sha256', process.env.JWT_ACCESS_SECRET ?? 'dev')
+    return createHmac('sha256', signingSecret())
       .update(`file:${id}:${exp}`)
       .digest('hex');
   }

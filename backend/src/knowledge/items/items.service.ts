@@ -1,3 +1,4 @@
+import { signingSecret } from '../../config/secrets';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { KnowledgeType, Prisma, VisibilityKind } from '@prisma/client';
@@ -143,7 +144,7 @@ export class ItemsService {
   }
 
   private sign(userId: string, itemId: string, ts: number) {
-  return createHmac('sha256', process.env.JWT_ACCESS_SECRET ?? 'dev')
+  return createHmac('sha256', signingSecret())
     .update(`${userId}.${itemId}.${ts}`)
     .digest('hex');
   }
