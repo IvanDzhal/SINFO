@@ -17,14 +17,14 @@
 
 [data-theme='dark'] {
   color-scheme: dark;
-  --bg: #121212;
-  --surface: #1c1c1c;
-  --surface-2: #242424;
-  --border: #2f2f2f;
+  --bg: #040f29;
+  --surface: #252E49BA;
+  --surface-2: #44455B94;
+  --border: #3f4452;
   --ink: #f5f5f4;
   --muted: #a8a29e;
   --accent: #ff6b00;
-  --accent-soft: #3a2111;
+  --accent-soft: #82756554;
   --success: #4ade80;
   --success-soft: #12301f;
   --danger: #f87171;
