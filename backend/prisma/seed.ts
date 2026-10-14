@@ -59,8 +59,8 @@ async function main() {
     create: {
       login: 'admin',
       passwordHash: await argon2.hash(adminPassword),
-      firstName: 'Іван',
-      lastName: 'Admin',
+      firstName: 'Admin',
+      lastName: 'Adminov',
     },
   });
 
