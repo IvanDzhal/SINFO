@@ -29,53 +29,169 @@ const SCOPE_LABEL: Record<Scope, string> = {
   GLOBAL: 'Вся компанія',
 }
 
-const GROUP_LABEL: Record<string, string> = {
-  admin: 'Адмін-панель',
-  'admin.audit': 'Журнал дій',
-  knowledge: 'База знань',
-  testing: 'Тестування',
-  'analytics.sales': 'Аналітика продажів',
-  'analytics.content': 'Аналітика контенту',
-  'analytics.online_status': 'Онлайн-статус',
-  'core.users': 'Користувачі',
-  'core.roles': 'Ролі',
-  'core.regions': 'Області',
-  'core.cities': 'Міста',
-  'core.stores': 'Магазини',
-  'core.brands': 'Бренди',
-}
+// Єдина мапа підписів: код права -> назва українською.
+// Групи й права показуються у порядку запису тут.
+const GROUPS: { key: string; label: string; items: [string, string][] }[] = [
+  {
+    key: 'knowledge',
+    label: 'База знань',
+    items: [
+      ['knowledge.view', 'Перегляд інструкцій і матеріалів'],
+      ['knowledge.view_news', 'Перегляд новин'],
+      ['knowledge.view_updates', 'Перегляд «Останніх оновлень»'],
+      ['knowledge.create', 'Створення матеріалів'],
+      ['knowledge.edit', 'Редагування матеріалів'],
+      ['knowledge.publish', 'Публікація матеріалів'],
+      ['knowledge.archive', 'Архівація матеріалів'],
+      ['knowledge.delete', 'Видалення матеріалів'],
+      ['knowledge.view_versions', 'Перегляд версій'],
+      ['knowledge.view_read_status', 'Статус прочитання'],
+      ['knowledge.manage_visibility', 'Керування видимістю'],
+      ['knowledge.manage_categories', 'Керування категоріями'],
+      ['knowledge.manage_files', 'Керування файлами'],
+      ['knowledge.create_embed', 'Вставка HTML-блоків'],
+    ],
+  },
+  {
+    key: 'testing',
+    label: 'Тестування',
+    items: [
+      ['testing.view', 'Перегляд тестів'],
+      ['testing.start', 'Проходження тестів'],
+      ['testing.create', 'Створення тестів'],
+      ['testing.edit', 'Редагування тестів'],
+      ['testing.publish', 'Публікація тестів'],
+      ['testing.archive', 'Архівація тестів'],
+      ['testing.delete', 'Видалення тестів'],
+      ['testing.manage_questions', 'Керування питаннями'],
+      ['testing.manage_required', "Обов'язкові тести"],
+      ['testing.manage_deadlines', 'Керування термінами'],
+      ['testing.view_results', 'Перегляд результатів'],
+      ['testing.view_answers', 'Перегляд відповідей'],
+      ['testing.view_attempts', 'Перегляд спроб'],
+      ['testing.view_analytics', 'Аналітика тестування'],
+    ],
+  },
+  {
+    key: 'training',
+    label: 'Навчання',
+    items: [
+      ['training.view', 'Проходження навчання'],
+      ['training.manage', 'Керування програмою навчання'],
+      ['training.view_analytics', 'Прогрес співробітників'],
+    ],
+  },
+  {
+    key: 'analytics.sales',
+    label: 'Аналітика продажів',
+    items: [
+      ['analytics.sales.view', 'Перегляд по компанії'],
+      ['analytics.sales.view_region', 'Перегляд по області'],
+      ['analytics.sales.view_store', 'Перегляд по магазину'],
+      ['analytics.sales.view_employee', 'Перегляд по співробітнику'],
+      ['analytics.sales.export', 'Експорт'],
+    ],
+  },
+  {
+    key: 'analytics.content',
+    label: 'Аналітика контенту',
+    items: [
+      ['analytics.content.view', 'Перегляд по компанії'],
+      ['analytics.content.view_region', 'Перегляд по області'],
+      ['analytics.content.view_store', 'Перегляд по магазину'],
+      ['analytics.content.view_employee', 'Перегляд по співробітнику'],
+      ['analytics.content.export', 'Експорт'],
+    ],
+  },
+  {
+    key: 'analytics.online_status',
+    label: 'Онлайн-статус',
+    items: [
+      ['analytics.online_status.view', 'Перегляд онлайн-статусу'],
+    ],
+  },
+  {
+    key: 'datasync',
+    label: 'Синхронізація даних',
+    items: [
+      ['datasync.view', 'Перегляд джерел і запусків'],
+      ['datasync.manage', 'Керування джерелами'],
+      ['datasync.run', 'Запуск синхронізації'],
+    ],
+  },
+  {
+    key: 'core.users',
+    label: 'Користувачі',
+    items: [
+      ['core.users.view', 'Перегляд'],
+      ['core.users.create', 'Створення'],
+      ['core.users.edit', 'Редагування'],
+      ['core.users.deactivate', 'Деактивація'],
+      ['core.users.reset_password', 'Скидання пароля'],
+      ['core.users.change_login', 'Зміна логіну'],
+      ['core.users.manage_roles', 'Керування ролями користувача'],
+      ['core.users.delete', 'Видалення'],
+    ],
+  },
+  {
+    key: 'core.roles',
+    label: 'Ролі',
+    items: [
+      ['core.roles.view', 'Перегляд'],
+      ['core.roles.create', 'Створення'],
+      ['core.roles.edit', 'Редагування'],
+      ['core.roles.archive', 'Архівація'],
+    ],
+  },
+  {
+    key: 'core.regions',
+    label: 'Області',
+    items: [
+      ['core.regions.view', 'Перегляд'],
+      ['core.regions.create', 'Створення'],
+      ['core.regions.edit', 'Редагування'],
+    ],
+  },
+  {
+    key: 'core.cities',
+    label: 'Міста',
+    items: [
+      ['core.cities.view', 'Перегляд'],
+      ['core.cities.create', 'Створення'],
+      ['core.cities.edit', 'Редагування'],
+    ],
+  },
+  {
+    key: 'core.stores',
+    label: 'Магазини',
+    items: [
+      ['core.stores.view', 'Перегляд'],
+      ['core.stores.create', 'Створення'],
+      ['core.stores.edit', 'Редагування'],
+    ],
+  },
+  {
+    key: 'core.brands',
+    label: 'Бренди',
+    items: [
+      ['core.brands.view', 'Перегляд'],
+      ['core.brands.create', 'Створення'],
+      ['core.brands.edit', 'Редагування'],
+    ],
+  },
+  {
+    key: 'admin',
+    label: 'Адмін-панель',
+    items: [
+      ['admin.access', 'Доступ до адмін-панелі'],
+      ['admin.audit.view', 'Перегляд журналу дій'],
+    ],
+  },
+]
 
-const ACTION_LABEL: Record<string, string> = {
-  access: 'Доступ',
-  view: 'Перегляд',
-  create: 'Створення',
-  edit: 'Редагування',
-  delete: 'Видалення',
-  publish: 'Публікація',
-  view_results: 'Перегляд результатів',
-  view_region: 'Перегляд по області',
-  view_store: 'Перегляд по магазину',
-  view_employee: 'Перегляд по співробітнику',
-  export: 'Експорт',
-  deactivate: 'Деактивація',
-  reset_password: 'Скидання пароля',
-  change_login: 'Зміна логіну',
-  manage_roles: 'Керування ролями',
-  archive: 'Архівація',
-  manage_categories: 'Керування категоріями',
-  manage_files: 'Керування файлами',
-  view_versions: 'Перегляд версій',
-  view_read_status: 'Статус прочитання',
-  manage_visibility: 'Керування видимістю',
-  create_embed: 'HTML-вставки',
-  start: 'Проходження тестів',
-  view_answers: 'Перегляд відповідей',
-  view_attempts: 'Перегляд спроб',
-  view_analytics: 'Аналітика тестів',
-  manage_deadlines: 'Керування дедлайнами',
-  manage_required: "Обов'язкові тести",
-  manage_questions: 'Керування питаннями',
-}
+const CODE_LABEL: Record<string, string> = Object.fromEntries(
+  GROUPS.flatMap((g) => g.items),
+)
 
 const selectClass =
   'rounded-xl border border-border bg-surface-2 px-2 py-1.5 text-sm text-ink outline-none focus:border-accent disabled:opacity-60'
@@ -139,12 +255,21 @@ export default function RoleEditPage() {
   }, [id])
 
   const groups = useMemo(() => {
-    const g: Record<string, Permission[]> = {}
-    for (const p of permissions) {
-      const key = p.code.split('.').slice(0, -1).join('.')
-      ;(g[key] ??= []).push(p)
+    const byCode = new Map(permissions.map((p) => [p.code, p]))
+    const used = new Set<string>()
+    const out: { key: string; label: string; items: Permission[] }[] = []
+    for (const g of GROUPS) {
+      const items = g.items.flatMap(([code]) => {
+        const p = byCode.get(code)
+        if (!p) return []
+        used.add(code)
+        return [p]
+      })
+      if (items.length) out.push({ key: g.key, label: g.label, items })
     }
-    return Object.entries(g)
+    const rest = permissions.filter((p) => !used.has(p.code))
+    if (rest.length) out.push({ key: 'other', label: 'Інше', items: rest })
+    return out
   }, [permissions])
 
   function setOne(permissionId: string, value: Scope | '') {
@@ -222,25 +347,25 @@ export default function RoleEditPage() {
       )}
 
       <div className="space-y-4">
-        {groups.map(([key, items]) => (
+        {groups.map(({ key, label, items }) => (
           <div key={key} className="overflow-hidden rounded-2xl border border-border bg-surface">
             <div className="flex items-center justify-between gap-3 bg-surface-2 px-4 py-2.5">
-              <h3 className="font-medium">{GROUP_LABEL[key] ?? key}</h3>
+              <h3 className="font-medium">{label}</h3>
               <label className="flex items-center gap-2 text-sm text-muted">
                 Всім:
                 <ScopeSelect value="" disabled={readOnly} onChange={(v) => setGroup(items, v)} />
               </label>
             </div>
             {items.map((p) => {
-              const action = p.code.split('.').pop() ?? p.code
               return (
                 <div
                   key={p.id}
                   className="flex items-center justify-between gap-3 border-t border-border px-4 py-2"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm">{ACTION_LABEL[action] ?? action}</p>
-                    <p className="truncate text-xs text-muted">{p.code}</p>
+                    <p className="text-sm" title={p.code}>
+                      {CODE_LABEL[p.code] ?? 'Невідоме право'}
+                    </p>
                   </div>
                   <ScopeSelect
                     value={scopes[p.id] ?? ''}

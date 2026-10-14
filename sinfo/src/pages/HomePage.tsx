@@ -33,7 +33,7 @@ const cards: HomeCard[] = [
     title: 'Навчання',
     text: 'Навчальні матеріали для стажерів',
     icon: GraduationCap,
-    soon: true,
+    perm: 'training.view',
   },
   {
     to: '/instructions',
@@ -110,7 +110,7 @@ const TYPE_ICON: Record<Latest['type'], LucideIcon> = {
 function LatestFeed() {
   const can = useCan()
   const { data, loading } = useFetch<Latest>('/knowledge/items/latest?limit=6')
-  if (!can('knowledge.view')) return null
+  if (!can('knowledge.view_updates')) return null
 
   return (
     <div className="rounded-2xl border border-border bg-surface">
@@ -166,7 +166,7 @@ interface NewsItem {
 
 function NewsCard({ items, loading }: { items: NewsItem[]; loading: boolean }) {
   const can = useCan()
-  if (!can('knowledge.view')) return null
+  if (!can('knowledge.view_news')) return null
 
   return (
     <div className="rounded-2xl border border-border bg-surface">

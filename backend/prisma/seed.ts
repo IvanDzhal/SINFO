@@ -10,7 +10,7 @@ const permissionCodes = [
   'testing.manage_questions',
   'knowledge.archive', 'knowledge.manage_categories', 'knowledge.manage_files',
   'knowledge.view_versions', 'knowledge.view_read_status', 'knowledge.manage_visibility',
-  'knowledge.create_embed',
+  'knowledge.create_embed', 'knowledge.view_news', 'knowledge.view_updates',
   'knowledge.view', 'knowledge.create', 'knowledge.edit', 'knowledge.delete', 'knowledge.publish',
   'testing.view', 'testing.create', 'testing.edit', 'testing.delete', 'testing.publish', 'testing.view_results',
   'analytics.sales.view', 'analytics.sales.view_region', 'analytics.sales.view_store',

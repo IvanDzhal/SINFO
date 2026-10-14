@@ -1,5 +1,10 @@
 import { signingSecret } from '../../config/secrets';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { KnowledgeType, Prisma, VisibilityKind } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -78,7 +83,14 @@ export class ItemsService {
     };
   }
 
+  private async requirePermission(user: Viewer, code: string) {
+    if ((await scopesFor(this.prisma, user.id, code)).length === 0) {
+      throw new ForbiddenException('Недостатньо прав');
+    }
+  }
+
   async list(user: Viewer, type: KnowledgeType) {
+    if (type === 'news') await this.requirePermission(user, 'knowledge.view_news');
     const where = await this.visibleWhere(user);
     const items = await this.prisma.knowledgeItem.findMany({
       where: { ...where, type },
@@ -100,6 +112,11 @@ export class ItemsService {
   }
 
   async latest(user: Viewer, limit: number, type?: string) {
+    // новини й блок «Останні оновлення» мають власні права
+    await this.requirePermission(
+      user,
+      type === 'news' ? 'knowledge.view_news' : 'knowledge.view_updates',
+    );
     const where = await this.visibleWhere(user);
     const kind =
       type && (Object.values(KnowledgeType) as string[]).includes(type)
