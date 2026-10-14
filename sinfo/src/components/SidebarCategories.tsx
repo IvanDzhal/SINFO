@@ -17,11 +17,9 @@ interface Cat extends SubCat {
 
 export default function SidebarCategories({ onNavigate }: { onNavigate: () => void }) {
   const { pathname, search } = useLocation()
-  const isMaterials = pathname.startsWith('/materials')
-  const base = isMaterials ? '/materials' : '/instructions'
-  const { data, reload } = useFetch<Cat>(
-    `/knowledge/items/category-counts?type=${isMaterials ? 'material' : 'instruction'}`,
-  )
+  // у сайдбарі лише категорії інструкцій, категорії робочих матеріалів сюди не потрапляють
+  const base = '/instructions'
+  const { data, reload } = useFetch<Cat>('/knowledge/items/category-counts?type=instruction')
 
   // оновлюємо лічильники при переході між сторінками
   useEffect(() => {
