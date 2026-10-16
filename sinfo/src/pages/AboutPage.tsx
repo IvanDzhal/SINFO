@@ -231,7 +231,15 @@ export default function AboutPage() {
       </section>
 
       <p className="text-right text-xs text-muted/80">
-        © Автор сторінки: Анастасія Сушинська
+        © Автор сторінки:{' '}
+        <a
+          href="https://www.instagram.com/snsk.sia/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="transition-colors hover:text-accent"
+        >
+          Анастасія Сушинська
+        </a>
       </p>
     </div>
   )
