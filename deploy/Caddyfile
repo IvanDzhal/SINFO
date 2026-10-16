@@ -1,0 +1,23 @@
+# SITE_ADDRESS=:80            — доступ по IP/порту (поки домен не прив'язаний)
+# SITE_ADDRESS=sinfo.example  — автоматичний HTTPS (Let's Encrypt)
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+	request_body {
+		max_size 25MB
+	}
+
+	handle /api/* {
+		reverse_proxy backend:3000
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options SAMEORIGIN
+		-Server
+	}
+}

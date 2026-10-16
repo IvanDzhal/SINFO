@@ -51,18 +51,17 @@ async function main() {
     });
   }
 
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? randomBytes(16).toString('base64url');
-  if (!process.env.SEED_ADMIN_PASSWORD) console.log('Згенеровано пароль admin (збережіть):', adminPassword);
+  const fixedPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (fixedPassword && fixedPassword.length < 12) throw new Error('SEED_ADMIN_PASSWORD: мінімум 12 символів');
+  const adminPassword = fixedPassword ?? randomBytes(16).toString('base64url');
+  if (!fixedPassword) console.log('Згенеровано пароль admin (збережіть):', adminPassword);
+  const adminData = { firstName: 'Admin', lastName: 'Adminov' };
 
   const admin = await prisma.user.upsert({
     where: { login: 'admin' },
-    update: {},
-    create: {
-      login: 'admin',
-      passwordHash: await argon2.hash(adminPassword),
-      firstName: 'Admin',
-      lastName: 'Adminov',
-    },
+    // з SEED_ADMIN_PASSWORD повторний seed скидає пароль admin до заданого (фіксований пароль)
+    update: fixedPassword ? { ...adminData, passwordHash: await argon2.hash(adminPassword) } : {},
+    create: { login: 'admin', passwordHash: await argon2.hash(adminPassword), ...adminData },
   });
 
   await prisma.userRole.upsert({
