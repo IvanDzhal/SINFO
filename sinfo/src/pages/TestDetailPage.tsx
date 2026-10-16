@@ -5,6 +5,7 @@ import clsx from 'clsx'
 import { api } from '@/services/api'
 import { getErrorMessage } from '@/utils/errors'
 import TestStatusBadge, { type MyStatus } from '@/components/TestStatusBadge'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface Attempt {
   id: string
@@ -51,6 +52,7 @@ export default function TestDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [data, setData] = useState<Detail | null>(null)
+  usePageTitle(data?.title)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 

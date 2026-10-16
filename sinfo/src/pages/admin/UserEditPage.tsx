@@ -8,6 +8,7 @@ import { Input, Select } from '@/components/Field'
 import { StatusBadge } from '@/components/DataTable'
 import { useCan } from '@/hooks/useCan'
 import { getErrorMessage } from '@/utils/errors'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface Item {
   id: string
@@ -81,6 +82,7 @@ export default function UserEditPage() {
   const navigate = useNavigate()
 
   const [user, setUser] = useState<UserDetail | null>(null)
+  usePageTitle(user && `Адмінка: ${user.firstName} ${user.lastName}`)
   const [loadError, setLoadError] = useState('')
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null)
 

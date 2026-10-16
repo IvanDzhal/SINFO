@@ -6,6 +6,7 @@ import { useThemeStore } from '@/store/useThemeStore'
 import { getErrorMessage } from '@/utils/errors'
 import RichContent from '@/components/RichContent'
 import Button from '@/components/Button'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface Lesson {
   id: string
@@ -40,6 +41,7 @@ export default function TrainingLessonPage() {
   const navigate = useNavigate()
   const theme = useThemeStore((s) => s.theme)
   const [lesson, setLesson] = useState<Lesson | null>(null)
+  usePageTitle(lesson?.title)
   const [pdfUrl, setPdfUrl] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)

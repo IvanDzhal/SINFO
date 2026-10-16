@@ -5,6 +5,7 @@ import { api } from '@/services/api'
 import Button from '@/components/Button'
 import { useCan } from '@/hooks/useCan'
 import { getErrorMessage } from '@/utils/errors'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 type Scope = 'SELF' | 'STORE' | 'REGION' | 'GLOBAL'
 
@@ -226,6 +227,7 @@ export default function RoleEditPage() {
   const { id } = useParams()
   const can = useCan()
   const [role, setRole] = useState<RoleDetail | null>(null)
+  usePageTitle(role && `Адмінка: роль ${role.name}`)
   const [name, setName] = useState('')
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [scopes, setScopes] = useState<Record<string, Scope | ''>>({})

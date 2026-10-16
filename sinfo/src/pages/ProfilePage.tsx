@@ -7,6 +7,7 @@ import { useCan } from '@/hooks/useCan'
 import Avatar from '@/components/Avatar'
 import UserResultsDrawer from '@/components/UserResultsDrawer'
 import { getErrorMessage } from '@/utils/errors'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface Profile {
   user: {
@@ -229,6 +230,7 @@ export default function ProfilePage() {
   const { id } = useParams()
   const can = useCan()
   const [data, setData] = useState<Profile | null>(null)
+  usePageTitle(data && `${data.user.firstName} ${data.user.lastName}`)
   const [ranking, setRanking] = useState<Ranking | null>(null)
   const [error, setError] = useState('')
   const [drawer, setDrawer] = useState(false)

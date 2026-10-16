@@ -5,6 +5,7 @@ import { Clock } from 'lucide-react'
 import clsx from 'clsx'
 import { api } from '@/services/api'
 import { getErrorMessage } from '@/utils/errors'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface RQuestion {
   id: string
@@ -121,6 +122,7 @@ function Result({ r }: { r: Completed }) {
 export default function TestAttemptPage() {
   const { attemptId } = useParams()
   const [state, setState] = useState<AttemptState | null>(null)
+  usePageTitle(state?.test.title)
   const [error, setError] = useState('')
   const [current, setCurrent] = useState(0)
   const [answers, setAnswers] = useState<Record<string, unknown>>({})

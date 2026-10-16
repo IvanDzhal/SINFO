@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import RouteTitle from '@/components/RouteTitle'
 import AdminLayout from '@/layouts/AdminLayout'
 import UserLayout from '@/layouts/UserLayout'
 import LoginPage from '@/pages/LoginPage'
@@ -38,6 +39,7 @@ const stubs: { path: string; title: string }[] = []
 function App() {
   return (
     <BrowserRouter>
+      <RouteTitle />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}>

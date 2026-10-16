@@ -6,6 +6,7 @@ import { api } from '@/services/api'
 import { useCan } from '@/hooks/useCan'
 import Button from '@/components/Button'
 import { RunBadge } from './DataSyncPage'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface Metric {
   code: string
@@ -79,6 +80,7 @@ export default function DataSourcePage() {
   const canManage = can('datasync.manage')
 
   const [detail, setDetail] = useState<Detail | null>(null)
+  usePageTitle(detail && `Адмінка: ${detail.store.name}`)
   const [draft, setDraft] = useState<Record<string, string>>({})
   const [preview, setPreview] = useState<Preview | null>(null)
   const [active, setActive] = useState<string | null>(null)

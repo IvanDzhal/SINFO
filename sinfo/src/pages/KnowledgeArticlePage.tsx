@@ -9,6 +9,7 @@ import { useThemeStore } from '@/store/useThemeStore'
 import RichContent from '@/components/RichContent'
 import VersionsModal from '@/components/VersionsModal'
 import { useCan } from '@/hooks/useCan'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 type ItemType = 'instruction' | 'material' | 'news'
 
@@ -79,6 +80,7 @@ export default function KnowledgeArticlePage() {
   const { id } = useParams()
   const theme = useThemeStore((s) => s.theme)
   const [article, setArticle] = useState<Article | null>(null)
+  usePageTitle(article?.title)
   const [error, setError] = useState('')
   const contentRef = useRef<HTMLDivElement>(null)
   const can = useCan()
