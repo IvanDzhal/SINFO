@@ -17,6 +17,7 @@ import RolesPage from '@/pages/admin/RolesPage'
 import RoleEditPage from '@/pages/admin/RoleEditPage'
 import AuditLogPage from '@/pages/admin/AuditLogPage'
 import CategoriesPage from '@/pages/admin/CategoriesPage'
+import MaintenancePage from '@/pages/admin/MaintenancePage'
 import DataSyncPage from '@/pages/admin/DataSyncPage'
 import DataSourcePage from '@/pages/admin/DataSourcePage'
 import KnowledgeListPage from '@/pages/KnowledgeListPage'
@@ -79,6 +80,7 @@ function App() {
               <Route path="brands" element={<BrandsPage />} />
               <Route path="roles" element={<RolesPage />} />
               <Route path="roles/:id" element={<RoleEditPage />} />
+              <Route path="maintenance" element={<MaintenancePage />} />
               <Route path="audit-log" element={<AuditLogPage />} />
               <Route path="data-sync" element={<DataSyncPage />} />
               <Route path="data-sync/:id" element={<DataSourcePage />} />

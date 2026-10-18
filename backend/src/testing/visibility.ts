@@ -21,6 +21,10 @@ export async function testVisibleWhere(
   prisma: PrismaService,
   user: Actor,
 ): Promise<Prisma.TestWhereInput> {
+  // Глобальний керівник тестів (адмін) бачить усі опубліковані, навіть обмежені брендом чи ролями
+  const manage = await scopesFor(prisma, user.id, 'testing.edit');
+  if (manage.includes('GLOBAL')) return { status: 'published' };
+
   const roles = await prisma.userRole.findMany({
     where: { userId: user.id, role: { archivedAt: null } },
     select: { roleId: true },

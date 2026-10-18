@@ -24,6 +24,7 @@ import { useMyAvatar } from '@/hooks/useMyAvatar'
 import Avatar from '@/components/Avatar'
 import SearchBox from '@/components/SearchBox'
 import NotificationsBell from '@/components/NotificationsBell'
+import MaintenanceBanner from '@/components/MaintenanceBanner'
 import SidebarCategories from '@/components/SidebarCategories'
 import Footer from '@/components/Footer'
 
@@ -112,6 +113,7 @@ export default function UserLayout() {
         </aside>
 
       <div className="flex min-h-screen flex-col lg:pl-64">
+        <MaintenanceBanner />
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-bg px-4 py-3 lg:px-6">
           <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Відкрити меню">
             <Menu size={22} />

@@ -64,3 +64,4 @@ backend/prisma/data/legacy-shops.ts
 
 # Docker volumes / backups
 *.sql.gz
+backend/prisma/data/legacy-attempts.json

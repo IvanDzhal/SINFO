@@ -30,7 +30,15 @@ const AUTHOR_SELECT = {
 export class ItemsService {
   constructor(private prisma: PrismaService, private avatars: AvatarService) {}
 
-  async visibleWhere(user: Viewer): Promise<Prisma.KnowledgeItemWhereInput> {
+  // strict: лише призначене саме цьому користувачу (для прогресу в профілі), без привілею адміна
+  async visibleWhere(user: Viewer, strict = false): Promise<Prisma.KnowledgeItemWhereInput> {
+    // Хто керує видимістю глобально (адмін), бачить усі опубліковані матеріали,
+    // навіть якщо вони обмежені брендом, магазином чи роллю, на які він сам не підпадає
+    if (!strict) {
+      const manage = await scopesFor(this.prisma, user.id, 'knowledge.manage_visibility');
+      if (manage.includes('GLOBAL')) return { status: 'published' };
+    }
+
     const roles = await this.prisma.userRole.findMany({
       where: { userId: user.id, role: { archivedAt: null } },
       select: { roleId: true },

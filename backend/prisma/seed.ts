@@ -17,7 +17,7 @@ const permissionCodes = [
   'analytics.sales.view_employee', 'analytics.sales.export',
   'analytics.content.view', 'analytics.content.view_region', 'analytics.content.view_store',
   'analytics.content.view_employee', 'analytics.content.export',
-  'analytics.online_status.view',  'admin.access', 'admin.audit.view',
+  'analytics.online_status.view',  'admin.access', 'admin.audit.view', 'admin.maintenance.manage',
   'core.users.view', 'core.users.create', 'core.users.edit', 'core.users.deactivate',
   'core.users.reset_password', 'core.users.change_login', 'core.users.manage_roles', 'core.users.delete',
   'core.roles.view', 'core.roles.create', 'core.roles.edit', 'core.roles.archive',

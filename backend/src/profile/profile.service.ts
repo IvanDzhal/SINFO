@@ -175,7 +175,7 @@ export class ProfileService {
   }
 
   private async knowledge(actor: Actor) {
-    const visible = await this.items.visibleWhere(actor);
+    const visible = await this.items.visibleWhere(actor, true);
     const base = { AND: [visible, { type: 'instruction' as const }] };
     const [total, read, last] = await Promise.all([
       this.prisma.knowledgeItem.count({ where: base }),

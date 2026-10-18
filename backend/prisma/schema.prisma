@@ -622,3 +622,15 @@ model TrainingLessonDone {
 
   @@id([userId, lessonId])
 }
+
+// Планові технічні роботи: плашка над шапкою показується до endsAt
+model MaintenanceWindow {
+  id          String   @id @default(uuid())
+  startsAt    DateTime
+  endsAt      DateTime
+  message     String   @default("")
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([endsAt])
+}

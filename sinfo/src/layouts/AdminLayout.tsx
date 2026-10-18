@@ -16,6 +16,7 @@ import {
   FolderTree,
   ArrowLeft,
   DatabaseZap,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -25,6 +26,7 @@ import { useCan } from '@/hooks/useCan'
 import { useHeartbeat } from '@/hooks/useHeartbeat'
 import { useMyAvatar } from '@/hooks/useMyAvatar'
 import Avatar from '@/components/Avatar'
+import MaintenanceBanner from '@/components/MaintenanceBanner'
 import logo from '../assets/SINFO_LOGO.png';
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
@@ -59,6 +61,7 @@ const nav: NavGroup[] = [
     group: 'Система',
     items: [
       { to: '/admin/data-sync', label: 'Синхронізація даних', icon: DatabaseZap },
+      { to: '/admin/maintenance', label: 'Технічні роботи', icon: Wrench },
       { to: '/admin/audit-log', label: 'Журнал дій', icon: ScrollText },
     ],
   },
@@ -75,6 +78,7 @@ const PERM: Record<string, string> = {
   '/admin/users': 'core.users.view',
   '/admin/roles': 'core.roles.view',
   '/admin/audit-log': 'admin.audit.view',
+  '/admin/maintenance': 'admin.maintenance.manage',
   '/admin/data-sync': 'datasync.view',
   '/admin/knowledge/categories': 'knowledge.manage_categories',
 }
@@ -158,6 +162,7 @@ const can = useCan()
       </aside>
 
       <div className="lg:pl-64">
+        <MaintenanceBanner />
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-bg px-4 py-3 lg:px-6">
           <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Відкрити меню">
             <Menu size={22} />
