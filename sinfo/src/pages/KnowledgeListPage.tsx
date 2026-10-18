@@ -83,6 +83,18 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
     setParams(root ? { category: categorySlug(root.name) } : {}, { replace: true })
   }
 
+  function pickSub(key: string | null) {
+    const root = cats.data.find((c) => c.id === category)
+    if (!root) return
+    const child = cats.data.find((c) => c.id === key)
+    setParams(
+      child
+        ? { category: categorySlug(root.name), sub: categorySlug(child.name) }
+        : { category: categorySlug(root.name) },
+      { replace: true },
+    )
+  }
+
   function changeMode(next: Mode) {
     setMode(next)
     setUnread(false)
@@ -99,6 +111,19 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
       .filter((c) => !c.parentId && counts.has(c.id))
       .map((c) => ({ ...c, count: counts.get(c.id) ?? 0 }))
   }, [items.data, cats.data])
+
+  const subs = useMemo(() => {
+    if (category === 'all') return []
+    const counts = new Map<string, number>()
+    items.data.forEach((i) => {
+      if (i.category && rootId(i) === category && i.category.parentId) {
+        counts.set(i.category.id, (counts.get(i.category.id) ?? 0) + 1)
+      }
+    })
+    return cats.data
+      .filter((c) => c.parentId === category && counts.has(c.id))
+      .map((c) => ({ ...c, count: counts.get(c.id) ?? 0 }))
+  }, [items.data, cats.data, category])
 
   const visible = useMemo(() => {
     let list = items.data
@@ -228,6 +253,34 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
           </select>
         </label>
       </div>
+
+      {subs.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => pickSub(null)}
+            className={clsx(
+              'rounded-full border px-3 py-1 text-sm',
+              !sub ? 'border-accent bg-accent-soft text-accent' : 'border-border bg-surface hover:bg-surface-2',
+            )}
+          >
+            Усі підкатегорії
+          </button>
+          {subs.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => pickSub(sub === s.id ? null : s.id)}
+              className={clsx(
+                'rounded-full border px-3 py-1 text-sm',
+                sub === s.id
+                  ? 'border-accent bg-accent-soft text-accent'
+                  : 'border-border bg-surface hover:bg-surface-2',
+              )}
+            >
+              {s.name} <span className="text-xs text-muted">{s.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         {items.loading && <p className="px-4 py-6 text-center text-muted">Завантаження...</p>}
