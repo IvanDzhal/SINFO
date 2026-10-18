@@ -2,18 +2,21 @@
 name: sluhavkainfo
 
 services:
-  caddy:
+  # Вхідна точка проекту (HTTP). Назовні 80/443 і HTTPS тримає окремий проект /opt/gateway;
+  # він підключається до цієї служби через мережу "gateway" за іменем sluhavkainfo-web.
+  sluhavkainfo-web:
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
-      - "${HTTP_PORT:-8081}:80"
-      - "${HTTPS_PORT:-8443}:443"
-    environment:
-      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+      # лише локально (тест/SSH-тунель): http://127.0.0.1:8081
+      - "127.0.0.1:${LOCAL_PORT:-8081}:80"
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+    networks:
+      default:
+      gateway:
+        aliases:
+          - sluhavkainfo-web
     depends_on:
       - backend
       - frontend
@@ -96,9 +99,12 @@ services:
     volumes:
       - sinfo_storage_data:/data
 
+networks:
+  # спільна мережа з gateway; створюється один раз: docker network create gateway
+  gateway:
+    external: true
+
 volumes:
   sinfo_db_data:
   sinfo_redis_data:
   sinfo_storage_data:
-  caddy_data:
-  caddy_config:

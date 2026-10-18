@@ -1,6 +1,13 @@
-# SITE_ADDRESS=:80            — доступ по IP/порту (поки домен не прив'язаний)
-# SITE_ADDRESS=sinfo.example  — автоматичний HTTPS (Let's Encrypt)
-{$SITE_ADDRESS::80} {
+{
+	# HTTPS та сертифікати — справа окремого gateway (/opt/gateway)
+	auto_https off
+	# gateway стоїть перед нами — довіряємо його X-Forwarded-For
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+:80 {
 	encode zstd gzip
 	request_body {
 		max_size 25MB

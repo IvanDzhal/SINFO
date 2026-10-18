@@ -8,8 +8,9 @@ import { assertSecrets, corsOrigins } from './config/secrets';
 async function bootstrap() {
   assertSecrets();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  // за reverse proxy: справжній IP клієнта потрібен для throttler
-  app.set('trust proxy', 1);
+  // за ланцюгом reverse proxy (nginx → caddy → backend): довіряємо приватним мережам,
+  // тож req.ip = перша публічна адреса в X-Forwarded-For (справжній клієнт, потрібен throttler)
+  app.set('trust proxy', 'loopback, linklocal, uniquelocal');
   app.enableShutdownHooks();
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.setGlobalPrefix('api');
