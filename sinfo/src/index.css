@@ -59,3 +59,7 @@ body {
 .bn-editor[contenteditable='false'] {
   padding-inline: 0 !important;
 }
+/* Плаваючі елементи BlockNote (меню блоку, слеш-меню, тулбар) — над сайдбаром (z-40) і модалками (z-50) */
+.bn-container {
+  --bn-ui-base-z-index: 60;
+}

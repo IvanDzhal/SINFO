@@ -1,8 +1,9 @@
-import { useCreateBlockNote } from '@blocknote/react'
+import { SuggestionMenuController, useCreateBlockNote } from '@blocknote/react'
 import { BlockNoteView } from '@blocknote/mantine'
 import * as locales from '@blocknote/core/locales'
 import '@blocknote/core/fonts/inter.css'
 import '@blocknote/mantine/style.css'
+import { getSlashItems, richSchema } from './richSchema'
 import { resolveFileUrl, uploadFile } from '@/utils/fileUrl'
 
 export default function RichEditor({
@@ -19,6 +20,7 @@ export default function RichEditor({
   onChange: (blocks: unknown) => void
 }) {
   const editor = useCreateBlockNote({
+    schema: richSchema,
     initialContent:
       Array.isArray(initialContent) && initialContent.length > 0
         ? (initialContent as never)
@@ -32,7 +34,13 @@ export default function RichEditor({
       editor={editor}
       theme={theme}
       editable={editable}
+      slashMenu={false}
       onChange={() => onChange(editor.document)}
-    />
+    >
+      <SuggestionMenuController
+        triggerCharacter="/"
+        getItems={async (query) => getSlashItems(editor, query)}
+      />
+    </BlockNoteView>
   )
 }

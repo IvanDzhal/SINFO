@@ -21,7 +21,11 @@ docker compose -f docker-compose.prod.yml --env-file .env.production --profile t
 У `.env.production` вкажіть `CORS_ORIGINS=http://<IP>:8081`. Відкрийте порт 8081 у Hetzner Firewall / ufw.
 Перевірка: `http://<IP>:8081` і `http://<IP>:8081/api`.
 
-Додаткові сіди (`seed-sales.ts`, `seed-demo.ts`) запускайте так само через `tools` лише за потреби; demo-дані на проді не потрібні.
+Після основного seed **обов'язково** запустіть сід аналітики (права та показники продажів; без нього в «Синхронізації даних» немає показників для налаштування):
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.production --profile tools run --rm tools npx ts-node prisma/seed-sales.ts
+```
+Він ідемпотентний і не перезаписує зміни з адмінки. `seed-demo.ts` — лише демо-дані, на проді не запускайте.
 
 ## 2. Оновлення
 Залийте змінені файли через FileZilla, далі:
