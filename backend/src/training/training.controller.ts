@@ -1,3 +1,4 @@
+import { slugKeyPipe } from '../common/slug-key';
 import {
   BadRequestException,
   Body,
@@ -47,19 +48,19 @@ export class TrainingController {
 
   @Permissions('training.view')
   @Get('lessons/:id')
-  lesson(@Req() req: any, @Param('id') id: string) {
+  lesson(@Req() req: any, @Param('id', slugKeyPipe('trainingLesson')) id: string) {
     return this.service.lesson(req.user, id);
   }
 
   @Permissions('training.view')
   @Get('lessons/:id/file')
-  file(@Req() req: any, @Param('id') id: string) {
+  file(@Req() req: any, @Param('id', slugKeyPipe('trainingLesson')) id: string) {
     return this.service.fileUrl(req.user, id);
   }
 
   @Permissions('training.view')
   @Post('lessons/:id/complete')
-  complete(@Req() req: any, @Param('id') id: string) {
+  complete(@Req() req: any, @Param('id', slugKeyPipe('trainingLesson')) id: string) {
     return this.service.complete(req.user, id);
   }
 

@@ -331,6 +331,7 @@ enum Difficulty {
 
 model Test {
   id                  String             @id @default(uuid())
+  slug                String?            @unique
   title               String
   description         String             @default("")
   categoryId          String?
@@ -579,6 +580,7 @@ model TrainingStage {
 // kind: text (BlockNote JSON у content) | video (посилання YouTube) | pdf (KnowledgeFile)
 model TrainingLesson {
   id         String         @id @default(uuid())
+  slug       String?        @unique
   stageId    String
   stage      TrainingStage  @relation(fields: [stageId], references: [id], onDelete: Cascade)
   position   Int            @default(0)

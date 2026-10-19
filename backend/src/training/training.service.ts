@@ -1,3 +1,4 @@
+import { newSlug } from '../common/slug-key';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -48,12 +49,12 @@ export class TrainingService {
           title: true,
           description: true,
           test: {
-            select: { id: true, title: true, passingScorePercent: true, maxAttempts: true },
+            select: { id: true, slug: true, title: true, passingScorePercent: true, maxAttempts: true },
           },
           lessons: {
             where: { archivedAt: null },
             orderBy: { position: 'asc' },
-            select: { id: true, kind: true, title: true },
+            select: { id: true, slug: true, kind: true, title: true },
           },
         },
       }),
@@ -94,6 +95,7 @@ export class TrainingService {
         test: s.test
           ? {
               id: s.test.id,
+              slug: s.test.slug,
               title: s.test.title,
               passingScorePercent: s.test.passingScorePercent,
               passed: p?.testPassed ?? false,
@@ -140,7 +142,7 @@ export class TrainingService {
       this.prisma.trainingLesson.findMany({
         where: { stageId: l.stageId, archivedAt: null },
         orderBy: { position: 'asc' },
-        select: { id: true },
+        select: { id: true, slug: true },
       }),
     ]);
     const idx = siblings.findIndex((s) => s.id === id);
@@ -153,7 +155,7 @@ export class TrainingService {
       hasFile: !!l.fileId,
       stage: { id: l.stage.id, title: l.stage.title },
       done: !!done,
-      nextLessonId: siblings[idx + 1]?.id ?? null,
+      nextLessonId: siblings[idx + 1]?.slug ?? siblings[idx + 1]?.id ?? null,
     };
   }
 
@@ -317,6 +319,7 @@ export class TrainingService {
     const lesson = await this.prisma.$transaction(async (tx) => {
       const l = await tx.trainingLesson.create({
         data: {
+          slug: await newSlug(this.prisma, 'trainingLesson', dto.title),
           stageId,
           kind: dto.kind,
           title: dto.title.trim(),

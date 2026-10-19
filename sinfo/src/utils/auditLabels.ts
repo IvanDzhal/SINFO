@@ -40,8 +40,56 @@ const LABELS: Record<string, string> = {
   'test_question.created': 'Додано питання тесту',
   'test_question.updated': 'Змінено питання тесту',
   'test_question.deleted': 'Видалено питання тесту',
+  'training.stage_created': 'Створено етап навчання',
+  'training.stage_updated': 'Змінено етап навчання',
+  'training.stage_published': 'Опубліковано етап навчання',
+  'training.stage_archived': 'Архівовано етап навчання',
+  'training.stage_draft': 'Етап навчання переведено в чернетку',
+  'training.stage_deleted': 'Видалено етап навчання',
+  'training.lesson_created': 'Створено урок',
+  'training.lesson_updated': 'Змінено урок',
+  'training.lesson_archived': 'Архівовано урок',
+  'datasource.created': 'Створено джерело даних',
+  'datasource.updated': 'Змінено джерело даних',
+  'datasource.mapping_updated': 'Змінено зіставлення колонок джерела',
+  'datasource.mapping_copied': 'Скопійовано зіставлення колонок джерела',
+  'maintenance.created': 'Створено повідомлення про технічні роботи',
+  'maintenance.deleted': 'Видалено повідомлення про технічні роботи',
 }
 
+const ENTITIES: Record<string, string> = {
+  User: 'Користувач',
+  Region: 'Область',
+  City: 'Місто',
+  BrandFormat: 'Бренд',
+  Store: 'Магазин',
+  Role: 'Роль',
+  KnowledgeCategory: 'Категорія бази знань',
+  KnowledgeItem: 'Матеріал',
+  Test: 'Тест',
+  TestQuestion: 'Питання тесту',
+  TrainingStage: 'Етап навчання',
+  TrainingLesson: 'Урок',
+  DataSource: 'Джерело даних',
+  MaintenanceWindow: 'Технічні роботи',
+}
+
+const ACTION_VERBS: Record<string, string> = {
+  created: 'Створено',
+  updated: 'Змінено',
+  deleted: 'Видалено',
+  archived: 'Архівовано',
+  restored: 'Відновлено',
+  published: 'Опубліковано',
+}
+
+// Невідомий код не показуємо сирим: складаємо підпис із дієслова або говоримо загально
 export function actionLabel(code: string) {
-  return LABELS[code] ?? code
+  if (LABELS[code]) return LABELS[code]
+  const verb = ACTION_VERBS[code.split('.')[1] ?? '']
+  return verb ? `${verb}: ${code.split('.')[0]}` : 'Інша дія'
+}
+
+export function entityLabel(type: string) {
+  return ENTITIES[type] ?? 'Інше'
 }

@@ -15,6 +15,7 @@ import { useCan } from '@/hooks/useCan'
 
 interface Lesson {
   id: string
+  slug: string | null
   kind: 'text' | 'video' | 'pdf'
   title: string
   done: boolean
@@ -31,6 +32,7 @@ interface Stage {
   lessons: Lesson[]
   test: {
     id: string
+    slug: string | null
     title: string
     passingScorePercent: number
     passed: boolean
@@ -150,7 +152,7 @@ function StageCard({ stage: s }: { stage: Stage }) {
             return (
               <li key={l.id}>
                 <Link
-                  to={`/training/lesson/${l.id}`}
+                  to={`/training/lesson/${l.slug ?? l.id}`}
                   className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm hover:bg-surface-2"
                 >
                   <Icon size={16} className="shrink-0 text-muted" />
@@ -165,7 +167,7 @@ function StageCard({ stage: s }: { stage: Stage }) {
             <li>
               {s.test.available ? (
                 <Link
-                  to={`/testing/${s.test.id}`}
+                  to={`/testing/${s.test.slug ?? s.test.id}`}
                   className="flex items-center gap-3 rounded-xl bg-accent-soft px-3 py-2 text-sm font-medium text-accent"
                 >
                   <ClipboardCheck size={16} className="shrink-0" />

@@ -137,7 +137,8 @@ export class ItemsService {
 
     const items = await this.prisma.knowledgeItem.findMany({
       where: { AND: [where, typeFilter] },
-      orderBy: { publishedAt: 'desc' },
+      // updatedAt, а не publishedAt: нова версія опублікованої статті теж є оновленням
+      orderBy: { updatedAt: 'desc' },
       take: Math.min(Math.max(limit || 6, 1), 20),
       select: {
         id: true,
@@ -147,6 +148,8 @@ export class ItemsService {
         description: true,
         isRequired: true,
         publishedAt: true,
+        updatedAt: true,
+        version: true,
         author: { select: AUTHOR_SELECT },
         reads: { where: { userId: user.id }, select: { id: true } },
       },

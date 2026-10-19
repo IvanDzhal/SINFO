@@ -92,6 +92,8 @@ interface Latest {
   title: string
   isRequired: boolean
   publishedAt: string | null
+  updatedAt: string
+  version: number
   author: { firstName: string; lastName: string }
 }
 
@@ -137,7 +139,7 @@ function LatestFeed() {
               <p className="truncate text-sm font-medium">{i.title}</p>
               <p className="text-xs text-muted">
                 {TYPE_LABEL[i.type]}
-                {i.publishedAt && ` · ${new Date(i.publishedAt).toLocaleDateString('uk-UA')}`}
+                {` · ${i.version > 1 ? 'Оновлено ' : ''}${new Date(i.updatedAt).toLocaleDateString('uk-UA')}`}
                 {` · ${i.author.firstName} ${i.author.lastName}`}
               </p>
             </div>
