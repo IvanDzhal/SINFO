@@ -63,3 +63,30 @@ body {
 .bn-container {
   --bn-ui-base-z-index: 60;
 }
+
+/* Друк / «Зберегти як PDF»: лише вміст статті, без меню, шапки й підвалу */
+@media print {
+  aside,
+  nav,
+  header,
+  footer {
+    display: none !important;
+  }
+  :root,
+  [data-theme='dark'] {
+    --bg: #ffffff;
+    --ink: #000000;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .lg\:pl-64,
+  .lg\:ml-64 {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+  }
+}

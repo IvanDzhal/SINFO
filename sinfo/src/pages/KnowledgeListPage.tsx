@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Check, Clock, FileText, Plus } from 'lucide-react'
+import { Check, Clock, FileText, Plus, Pin } from 'lucide-react'
 import clsx from 'clsx'
 import { useFetch } from '@/hooks/useFetch'
 import { useCan } from '@/hooks/useCan'
@@ -25,6 +25,7 @@ interface Item {
   isRequired: boolean
   updatedAt: string
   isRead?: boolean
+  pinnedAt?: string | null
   category: Category | null
 }
 
@@ -306,7 +307,10 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
                 {isPublished && read ? <Check size={18} /> : <FileText size={18} />}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{i.title}</p>
+                <p className="truncate font-medium">
+                  {i.pinnedAt && <Pin size={14} className="mr-1.5 inline text-accent" aria-label="Закріплено" />}
+                  {i.title}
+                </p>
                 <p className="truncate text-sm text-muted">{i.description}</p>
               </div>
               {i.isRequired && !read && (

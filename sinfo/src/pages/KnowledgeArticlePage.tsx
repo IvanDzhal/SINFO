@@ -1,7 +1,7 @@
 import Avatar from '@/components/Avatar'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Clock, Eye, History, Pencil } from 'lucide-react'
+import { ArrowLeft, Clock, Eye, History, Pencil, Pin, PinOff, Printer } from 'lucide-react'
 import clsx from 'clsx'
 import { api } from '@/services/api'
 import { useFetch } from '@/hooks/useFetch'
@@ -10,6 +10,8 @@ import RichContent from '@/components/RichContent'
 import VersionsModal from '@/components/VersionsModal'
 import { useCan } from '@/hooks/useCan'
 import { usePageTitle } from '@/hooks/usePageTitle'
+import FeedbackBox from '@/components/FeedbackBox'
+import { getErrorMessage } from '@/utils/errors'
 
 type ItemType = 'instruction' | 'material' | 'news'
 
@@ -29,6 +31,8 @@ interface Article {
   isRead: boolean
   readToken: string
   canManage: boolean
+  pinnedAt?: string | null
+  status?: string
   slug: string | null
 }
 
@@ -176,7 +180,31 @@ export default function KnowledgeArticlePage() {
 
           <div className="flex flex-wrap items-start justify-between gap-3">
             <h1 className="text-2xl font-semibold">{article.title}</h1>
-            <div className="flex gap-2">
+            <div className="flex gap-2 print:hidden">
+              <button
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm hover:bg-surface-2"
+                title="Зберегти як PDF або надрукувати"
+              >
+                <Printer size={14} /> PDF
+              </button>
+              {article.canManage && can('knowledge.edit') && article.status === 'published' && (
+                <button
+                  onClick={async () => {
+                    const pin = !article.pinnedAt
+                    try {
+                      await api.post(`/knowledge/manage/items/${article.id}/${pin ? 'pin' : 'unpin'}`)
+                      setArticle((a) => (a ? { ...a, pinnedAt: pin ? new Date().toISOString() : null } : a))
+                    } catch (err) {
+                      window.alert(getErrorMessage(err, 'Не вдалося змінити закріплення'))
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm hover:bg-surface-2"
+                >
+                  {article.pinnedAt ? <PinOff size={14} /> : <Pin size={14} />}
+                  {article.pinnedAt ? 'Відкріпити' : 'Закріпити'}
+                </button>
+              )}
               {article.canManage && (
                 <Link
                   to={`/knowledge/${article.slug ?? article.id}/edit`}
@@ -223,6 +251,7 @@ export default function KnowledgeArticlePage() {
           <div ref={contentRef}>
             <RichContent key={article.id} content={article.content} theme={theme} />
           </div>
+          <FeedbackBox itemId={article.id} />
         </article>
 
         <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">

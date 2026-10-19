@@ -66,46 +66,62 @@ export function normalizeText(s: string): string {
     .replace(/\s+/g, ' ');
 }
 
-export function gradeAnswer(q: GradedQuestion, attemptId: string, answer: unknown): boolean {
-  if (answer === null || answer === undefined) return false;
+// Частка правильності відповіді від 0 до 1. Для кількох варіантів і відповідностей
+// діє часткове зарахування; для решти типів лише 0 або 1.
+export function gradeFraction(q: GradedQuestion, attemptId: string, answer: unknown): number {
+  if (answer === null || answer === undefined) return 0;
 
   switch (q.type) {
     case 'single': {
       const picked = q.options.find((o) => o.id === answer);
-      return !!picked && picked.isCorrect;
+      return picked && picked.isCorrect ? 1 : 0;
     }
     case 'multiple': {
-      if (!Array.isArray(answer)) return false;
+      if (!Array.isArray(answer)) return 0;
       const got = new Set(answer.filter((x): x is string => typeof x === 'string'));
       const want = new Set(q.options.filter((o) => o.isCorrect).map((o) => o.id));
-      return got.size === want.size && [...want].every((id) => got.has(id));
+      if (want.size === 0) return 0;
+      const hits = [...got].filter((id) => want.has(id)).length;
+      const wrong = got.size - hits;
+      // кожен зайвий вибір «з'їдає» один вірний, щоб не вигравало «відмітити все»
+      return Math.max(0, hits - wrong) / want.size;
     }
     case 'matching': {
-      if (typeof answer !== 'object' || Array.isArray(answer)) return false;
+      if (typeof answer !== 'object' || Array.isArray(answer) || q.options.length === 0) return 0;
       const map = answer as Record<string, unknown>;
-      return (
-        q.options.length > 0 &&
-        Object.keys(map).length === q.options.length &&
-        q.options.every((o) => map[o.id] === rightToken(attemptId, o.id))
-      );
+      const hits = q.options.filter((o) => map[o.id] === rightToken(attemptId, o.id)).length;
+      return hits / q.options.length;
     }
     default: {
-      if (typeof answer !== 'string') return false;
+      if (typeof answer !== 'string') return 0;
       const acc = parseAccepted(q.accepted);
-      if (!acc) return false;
+      if (!acc) return 0;
       if (acc.kind === 'number') {
         const given = parseNumber(answer);
-        if (given === null) return false;
+        if (given === null) return 0;
         const tol = (acc.tolerance ?? 0) + 1e-9;
         return acc.answers.some((a) => {
           const n = parseNumber(a);
           return n !== null && Math.abs(n - given) <= tol;
-        });
+        })
+          ? 1
+          : 0;
       }
       const given = normalizeText(answer);
-      return acc.answers.some((a) => normalizeText(a) === given);
+      return acc.answers.some((a) => normalizeText(a) === given) ? 1 : 0;
     }
   }
+}
+
+export function gradeAnswer(q: GradedQuestion, attemptId: string, answer: unknown): boolean {
+  return gradeFraction(q, attemptId, answer) >= 1;
+}
+
+// Бали за питання: часткова відповідь дає менше за повну, але не менше 0
+export function pointsFor(q: GradedQuestion & { points: number }, attemptId: string, answer: unknown): number {
+  const f = gradeFraction(q, attemptId, answer);
+  if (f >= 1) return q.points;
+  return Math.min(Math.max(q.points - 1, 0), Math.round(f * q.points));
 }
 
 // Перевіряє форму відповіді і приводить її до вигляду для збереження (null = очистити)

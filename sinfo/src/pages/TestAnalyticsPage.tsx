@@ -5,6 +5,7 @@ import clsx from 'clsx'
 import { api } from '@/services/api'
 import { useFetch } from '@/hooks/useFetch'
 import UserResultsDrawer from '@/components/UserResultsDrawer'
+import ExportButton from '@/components/ExportButton'
 import TestStatusBadge, { type MyStatus } from '@/components/TestStatusBadge'
 
 type Tab = 'tests' | 'stores' | 'regions' | 'users' | 'questions'
@@ -257,7 +258,13 @@ export default function TestAnalyticsPage() {
       >
         <ArrowLeft size={16} /> Тестування
       </Link>
-      <h2 className="mb-1 text-xl font-semibold">Аналітика тестів</h2>
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-xl font-semibold">Аналітика тестів</h2>
+        <ExportButton
+          url="/testing/analytics/export"
+          params={{ testId: test?.id, storeId: store?.id, regionId: region?.id, search: debounced }}
+        />
+      </div>
       <p className="mb-4 text-sm text-muted">
         Дані у межах вашого доступу. Лічильники рахуються за призначеннями (працівник × тест).
       </p>

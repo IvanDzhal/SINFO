@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 const permissionCodes = [
   'testing.start', 'testing.archive', 'testing.view_answers', 'testing.view_attempts',
   'testing.view_analytics', 'testing.manage_deadlines', 'testing.manage_required',
-  'testing.manage_questions',
+  'testing.manage_questions', 'testing.edit_results',
   'knowledge.archive', 'knowledge.manage_categories', 'knowledge.manage_files',
   'knowledge.view_versions', 'knowledge.view_read_status', 'knowledge.manage_visibility',
   'knowledge.create_embed', 'knowledge.view_news', 'knowledge.view_updates',

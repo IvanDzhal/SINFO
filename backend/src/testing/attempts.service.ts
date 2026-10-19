@@ -3,7 +3,7 @@ import { Prisma, QuestionType } from '@prisma/client';
 import { randomInt } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Actor, scopesFor } from '../knowledge/helpers';
-import { gradeAnswer, normalizeAnswer, pickRandom, rightToken, seededShuffle } from './grading';
+import { normalizeAnswer, pointsFor, pickRandom, rightToken, seededShuffle } from './grading';
 import { computeStatus } from './status';
 import { parseAccepted, toQuestionData, validateQuestion } from './validation';
 import { testVisibleWhere } from './visibility';
@@ -158,7 +158,7 @@ export class AttemptsService {
         data: {
           testId,
           userId: user.id,
-          attemptNumber: attempts.length + 1,
+          attemptNumber: (await this.nextNumber(testId, user.id)),
           expiresAt,
           questionIds: chosen.map((q) => q.id),
           seed: randomInt(1, 2_000_000_000),
@@ -322,8 +322,8 @@ export class AttemptsService {
       const q = byId.get(qid);
       if (!q) continue;
       const answer = saved.get(qid) ?? null;
-      const correct = answer !== null && gradeAnswer(q, attempt.id, answer);
-      const points = correct ? q.points : 0;
+      const points = answer === null ? 0 : pointsFor(q, attempt.id, answer);
+      const correct = points === q.points;
       maxScore += q.points;
       score += points;
       rows.push({ questionId: qid, answer, isCorrect: correct, score: points });
@@ -382,6 +382,15 @@ export class AttemptsService {
   }
 
   // ---------- допоміжне ----------
+
+  // після видалення спроби в нумерації можуть бути прогалини, тому береться максимум + 1
+  private async nextNumber(testId: string, userId: string) {
+    const last = await this.prisma.testAttempt.aggregate({
+      where: { testId, userId },
+      _max: { attemptNumber: true },
+    });
+    return (last._max.attemptNumber ?? 0) + 1;
+  }
 
   private async loadOwn(user: Actor, attemptId: string) {
     const attempt = await this.prisma.testAttempt.findUnique({

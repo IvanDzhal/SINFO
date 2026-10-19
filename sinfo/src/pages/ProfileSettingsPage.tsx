@@ -7,6 +7,7 @@ import { setMyAvatar, useMyAvatar } from '@/hooks/useMyAvatar'
 import Avatar from '@/components/Avatar'
 import Button from '@/components/Button'
 import { getErrorMessage } from '@/utils/errors'
+import PushToggle from '@/components/PushToggle'
 
 const MAX_MB = 3
 
@@ -88,6 +89,8 @@ export default function ProfileSettingsPage() {
         </div>
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}
       </section>
+
+      <PushToggle />
 
       <section className="rounded-xl border border-border bg-surface p-5 opacity-70">
         <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold">

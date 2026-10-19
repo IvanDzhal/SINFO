@@ -6,4 +6,7 @@ export class AuditQueryDto {
   @IsOptional() @IsString() entityType?: string;
   @IsOptional() @IsISO8601() dateFrom?: string;
   @IsOptional() @IsISO8601() dateTo?: string;
+  @IsOptional() @IsString() search?: string;
+  @IsOptional() @IsString() offset?: string;
+  @IsOptional() @IsString() limit?: string;
 }

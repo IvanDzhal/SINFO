@@ -261,23 +261,32 @@ export class TestsService {
   }
 
   async restore(user: Actor, id: string) {
-    const test = await this.loadManageable(user, id, 'testing.archive');
+    const test = await this.loadManageable(user, id, 'testing.archive', true);
+    if (test.status === 'trashed') {
+      // з кошика повертаємо в той стан, у якому тест був до видалення
+      await this.prisma.$executeRaw`UPDATE "Test" SET "status" = ${test.trashedFrom ?? 'draft'}::"TestStatus", "trashedAt" = NULL, "trashedFrom" = NULL WHERE "id" = ${id}`;
+      await this.audit.log(user.id, 'test.untrashed', 'Test', id, { title: test.title });
+      return { ok: true };
+    }
     if (test.status !== 'archived') throw new BadRequestException('Тест не в архіві');
     await this.prisma.test.update({ where: { id }, data: { status: 'draft' } });
     await this.audit.log(user.id, 'test.restored', 'Test', id);
     return { ok: true };
   }
 
+  // Перше видалення переносить у кошик, повторне (з кошика) видаляє назавжди
   async remove(user: Actor, id: string) {
-    const test = await this.loadManageable(user, id, 'testing.delete');
-    if (test.status !== 'draft') {
-      throw new BadRequestException('Видалити можна лише чернетку. Для решти використайте архів');
+    const test = await this.loadManageable(user, id, 'testing.delete', true);
+    if (test.status !== 'trashed') {
+      await this.prisma.$executeRaw`UPDATE "Test" SET "trashedFrom" = "status", "status" = 'trashed', "trashedAt" = NOW() WHERE "id" = ${id}`;
+      await this.audit.log(user.id, 'test.trashed', 'Test', id, { title: test.title });
+      return { ok: true, trashed: true };
     }
-    const attempts = await this.prisma.testAttempt.count({ where: { testId: id } });
-    if (attempts > 0) {
-      throw new BadRequestException('У тесту є спроби, видалити його не можна. Використайте архів');
-    }
-    await this.prisma.test.delete({ where: { id } });
+    // спроби (разом з відповідями) видаляються разом з тестом
+    await this.prisma.$transaction([
+      this.prisma.testAttempt.deleteMany({ where: { testId: id } }),
+      this.prisma.test.delete({ where: { id } }),
+    ]);
     await this.audit.log(user.id, 'test.deleted', 'Test', id, { title: test.title });
     return { ok: true };
   }
@@ -296,7 +305,7 @@ export class TestsService {
     });
   }
 
-  private async loadManageable(user: Actor, id: string, code: string) {
+  private async loadManageable(user: Actor, id: string, code: string, allowTrashed = false) {
     const test = await this.prisma.test.findUnique({
       where: { id },
       include: {
@@ -305,6 +314,9 @@ export class TestsService {
       },
     });
     if (!test) throw new NotFoundException('Тест не знайдено');
+    if (test.status === 'trashed' && !allowTrashed) {
+      throw new BadRequestException('Тест у кошику. Спершу відновіть його');
+    }
     const scopes = await scopesFor(this.prisma, user.id, code);
     const ok = await this.prisma.test.findFirst({
       where: { AND: [{ id }, testAuthorWhere(scopes, user)] },

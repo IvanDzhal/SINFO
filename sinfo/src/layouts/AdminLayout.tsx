@@ -17,6 +17,8 @@ import {
   ArrowLeft,
   DatabaseZap,
   Wrench,
+  Trash2,
+  MessageSquareWarning,
   type LucideIcon,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -55,7 +57,11 @@ const nav: NavGroup[] = [
   },
   {
     group: 'База знань',
-    items: [{ to: '/admin/knowledge/categories', label: 'Категорії', icon: FolderTree }],
+    items: [
+      { to: '/admin/knowledge/categories', label: 'Категорії', icon: FolderTree },
+      { to: '/admin/feedback', label: 'Відгуки до матеріалів', icon: MessageSquareWarning },
+      { to: '/admin/trash', label: 'Кошик', icon: Trash2 },
+    ],
   },
   {
     group: 'Система',
@@ -81,6 +87,8 @@ const PERM: Record<string, string> = {
   '/admin/maintenance': 'admin.maintenance.manage',
   '/admin/data-sync': 'datasync.view',
   '/admin/knowledge/categories': 'knowledge.manage_categories',
+  '/admin/trash': 'admin.access',
+  '/admin/feedback': 'knowledge.edit',
 }
 
 export default function AdminLayout() {

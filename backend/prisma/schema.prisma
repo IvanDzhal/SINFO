@@ -20,38 +20,40 @@ enum Scope {
 }
 
 model User {
-  id                  String     @id @default(uuid())
-  login               String     @unique
-  passwordHash        String
-  firstName           String
-  lastName            String
-  status              UserStatus @default(active)
-  position            String?
-  regionId            String?
-  cityId              String?
-  storeId             String?
-  region              Region?    @relation(fields: [regionId], references: [id])
-  city                City?      @relation(fields: [cityId], references: [id])
-  store               Store?     @relation(fields: [storeId], references: [id])
-  roles               UserRole[]
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
-  lastLoginAt         DateTime?
-  avatarKey           String?
-  avatarMime          String?
-  avatarUpdatedAt     DateTime?
-  activityDays        UserActivityDay[]
-  managedRegions      UserRegion[]
-  auditLogs           AuditLog[]
-  presence       UserPresence?
-  knowledgeItems KnowledgeItem[]
-  knowledgeReads KnowledgeRead[]
+  id                String               @id @default(uuid())
+  login             String               @unique
+  passwordHash      String
+  firstName         String
+  lastName          String
+  status            UserStatus           @default(active)
+  position          String?
+  regionId          String?
+  cityId            String?
+  storeId           String?
+  region            Region?              @relation(fields: [regionId], references: [id])
+  city              City?                @relation(fields: [cityId], references: [id])
+  store             Store?               @relation(fields: [storeId], references: [id])
+  roles             UserRole[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  lastLoginAt       DateTime?
+  avatarKey         String?
+  avatarMime        String?
+  avatarUpdatedAt   DateTime?
+  activityDays      UserActivityDay[]
+  managedRegions    UserRegion[]
+  auditLogs         AuditLog[]
+  presence          UserPresence?
+  knowledgeItems    KnowledgeItem[]
+  knowledgeReads    KnowledgeRead[]
   knowledgeVersions KnowledgeVersion[]
-  knowledgeFiles KnowledgeFile[]
-  notifications Notification[]
-  createdTests Test[]
-  testAttempts TestAttempt[]
-  trainingDone TrainingLessonDone[]
+  knowledgeFiles    KnowledgeFile[]
+  notifications     Notification[]
+  createdTests      Test[]
+  testAttempts      TestAttempt[]
+  trainingDone      TrainingLessonDone[]
+  feedback          KnowledgeFeedback[]
+  pushSubscriptions PushSubscription[]
 }
 
 model Role {
@@ -92,12 +94,12 @@ model UserRole {
 }
 
 model Region {
-  id     String  @id @default(uuid())
-  name   String @unique
-  status String  @default("active")
-  cities City[]
-  stores Store[]
-  users  User[]
+  id       String       @id @default(uuid())
+  name     String       @unique
+  status   String       @default("active")
+  cities   City[]
+  stores   Store[]
+  users    User[]
   managers UserRegion[]
 }
 
@@ -108,7 +110,7 @@ model City {
   region   Region  @relation(fields: [regionId], references: [id])
   stores   Store[]
   users    User[]
-  status String @default("active")
+  status   String  @default("active")
 }
 
 model BrandFormat {
@@ -119,22 +121,22 @@ model BrandFormat {
 }
 
 model Store {
-  id            String      @id @default(uuid())
-  name          String
-  regionId      String
-  cityId        String
-  address       String?
-  status        String      @default("active")
-  brandFormatId String
-  region        Region      @relation(fields: [regionId], references: [id])
-  city          City        @relation(fields: [cityId], references: [id])
-  brandFormat   BrandFormat @relation(fields: [brandFormatId], references: [id])
-  users         User[]
+  id             String          @id @default(uuid())
+  name           String
+  regionId       String
+  cityId         String
+  address        String?
+  status         String          @default("active")
+  brandFormatId  String
+  region         Region          @relation(fields: [regionId], references: [id])
+  city           City            @relation(fields: [cityId], references: [id])
+  brandFormat    BrandFormat     @relation(fields: [brandFormatId], references: [id])
+  users          User[]
   // Короткий код магазину (ЗАБ, СТЛ…): його використовують працівники й імпорт
-  code          String?     @unique
-  dataSource    DataSource?
+  code           String?         @unique
+  dataSource     DataSource?
   salesSnapshots SalesSnapshot[]
-  salesMetrics  SalesMetric[]
+  salesMetrics   SalesMetric[]
 }
 
 model UserRegion {
@@ -186,9 +188,10 @@ model KnowledgeCategory {
   children   KnowledgeCategory[] @relation("CategoryTree")
   sortOrder  Int                 @default(0)
   archivedAt DateTime?
+  trashedAt  DateTime?
   createdAt  DateTime            @default(now())
-  items KnowledgeItem[]
-  tests Test[]
+  items      KnowledgeItem[]
+  tests      Test[]
 }
 
 enum KnowledgeType {
@@ -201,6 +204,7 @@ enum KnowledgeStatus {
   draft
   published
   archived
+  trashed
 }
 
 enum VisibilityKind {
@@ -212,30 +216,34 @@ enum VisibilityKind {
 }
 
 model KnowledgeItem {
-  id                 String              @id @default(uuid())
+  id                 String                @id @default(uuid())
   type               KnowledgeType
   title              String
-  description        String              @default("")
+  description        String                @default("")
   content            Json?
-  contentText        String              @default("")
+  contentText        String                @default("")
   categoryId         String?
-  category           KnowledgeCategory?  @relation(fields: [categoryId], references: [id])
+  category           KnowledgeCategory?    @relation(fields: [categoryId], references: [id])
   authorId           String
-  author             User                @relation(fields: [authorId], references: [id])
-  status             KnowledgeStatus     @default(draft)
-  version            Int                 @default(1)
-  isRequired         Boolean             @default(false)
-  readingTimeMinutes Int                 @default(1)
-  viewsCount         Int                 @default(0)
+  author             User                  @relation(fields: [authorId], references: [id])
+  status             KnowledgeStatus       @default(draft)
+  version            Int                   @default(1)
+  isRequired         Boolean               @default(false)
+  readingTimeMinutes Int                   @default(1)
+  viewsCount         Int                   @default(0)
+  pinnedAt           DateTime?
+  trashedAt          DateTime?
+  trashedFrom        KnowledgeStatus?
+  feedback           KnowledgeFeedback[]
   publishedAt        DateTime?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
   visibility         KnowledgeVisibility[]
   reads              KnowledgeRead[]
-  versions KnowledgeVersion[]
-  files KnowledgeFile[]
-  slug               String?             @unique
-  tests Test[]
+  versions           KnowledgeVersion[]
+  files              KnowledgeFile[]
+  slug               String?               @unique
+  tests              Test[]
 
   @@index([type, status])
 }
@@ -277,17 +285,17 @@ model KnowledgeVersion {
 }
 
 model KnowledgeFile {
-  id           String         @id @default(uuid())
-  key          String         @unique
-  originalName String
-  mimeType     String
-  size         Int
-  kind         String
-  itemId       String?
-  item         KnowledgeItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
-  uploadedById String
-  uploadedBy   User           @relation(fields: [uploadedById], references: [id])
-  createdAt    DateTime       @default(now())
+  id              String           @id @default(uuid())
+  key             String           @unique
+  originalName    String
+  mimeType        String
+  size            Int
+  kind            String
+  itemId          String?
+  item            KnowledgeItem?   @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  uploadedById    String
+  uploadedBy      User             @relation(fields: [uploadedById], references: [id])
+  createdAt       DateTime         @default(now())
   trainingLessons TrainingLesson[]
 
   @@index([itemId])
@@ -314,6 +322,7 @@ enum TestStatus {
   draft
   published
   archived
+  trashed
 }
 
 enum QuestionType {
@@ -345,6 +354,8 @@ model Test {
   timeLimitMinutes    Int                @default(25)
   passingScorePercent Int                @default(80)
   maxAttempts         Int                @default(2)
+  trashedAt           DateTime?
+  trashedFrom         TestStatus?
   createdById         String
   createdBy           User               @relation(fields: [createdById], references: [id])
   publishedAt         DateTime?
@@ -352,8 +363,8 @@ model Test {
   updatedAt           DateTime           @updatedAt
   questions           TestQuestion[]
   visibility          TestVisibility[]
-  attempts TestAttempt[]
-  trainingStages TrainingStage[]
+  attempts            TestAttempt[]
+  trainingStages      TrainingStage[]
 
   @@index([status])
 }
@@ -379,7 +390,7 @@ model TestQuestion {
   archivedAt  DateTime?
   test        Test         @relation(fields: [testId], references: [id], onDelete: Cascade)
   options     TestOption[]
-  answers TestAnswer[]
+  answers     TestAnswer[]
 
   @@index([testId])
 }
@@ -451,17 +462,17 @@ enum SyncStatus {
 
 // Джерело даних магазину (v1: одна таблиця на магазин)
 model DataSource {
-  id                   String        @id @default(uuid())
-  storeId              String        @unique
-  provider             String        @default("google_sheets")
+  id                   String          @id @default(uuid())
+  storeId              String          @unique
+  provider             String          @default("google_sheets")
   externalId           String
   sheetName            String?
-  status               String        @default("active")
+  status               String          @default("active")
   lastSyncAt           DateTime?
   lastSuccessfulSyncAt DateTime?
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
-  store                Store         @relation(fields: [storeId], references: [id])
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  store                Store           @relation(fields: [storeId], references: [id])
   mappings             DataMapping[]
   runs                 SyncRun[]
   snapshots            SalesSnapshot[]
@@ -471,46 +482,46 @@ model DataSource {
 // Звідки брати показник. key: plan.TO | fact.TO | day.TO | meta.days_passed | meta.days_left
 // cells — A1-посилання; кілька комірок підсумовуються.
 model DataMapping {
-  id        String     @id @default(uuid())
-  sourceId  String
-  key       String
-  cells     String[]
-  source    DataSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  id       String     @id @default(uuid())
+  sourceId String
+  key      String
+  cells    String[]
+  source   DataSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
   @@unique([sourceId, key])
 }
 
 // Конфігуровані метрики (базові й ефективність). thresholds — кольорова градація.
 model SalesMetricDef {
-  id             String        @id @default(uuid())
-  code           String        @unique
-  name           String
-  shortName      String
-  kind           String        @default("base")
-  unit           String        @default("currency")
-  numerator      String?
-  denominator    String?
-  thresholds     Json?
-  active         Boolean       @default(true)
-  displayOrder   Int           @default(0)
-  metrics        SalesMetric[]
+  id           String        @id @default(uuid())
+  code         String        @unique
+  name         String
+  shortName    String
+  kind         String        @default("base")
+  unit         String        @default("currency")
+  numerator    String?
+  denominator  String?
+  thresholds   Json?
+  active       Boolean       @default(true)
+  displayOrder Int           @default(0)
+  metrics      SalesMetric[]
 }
 
 model SyncRun {
-  id             String     @id @default(uuid())
+  id             String          @id @default(uuid())
   sourceId       String
-  trigger        String     @default("auto")
-  status         SyncStatus @default(pending)
-  startedAt      DateTime   @default(now())
+  trigger        String          @default("auto")
+  status         SyncStatus      @default(pending)
+  startedAt      DateTime        @default(now())
   finishedAt     DateTime?
-  recordsRead    Int        @default(0)
-  recordsSaved   Int        @default(0)
-  recordsUpdated Int        @default(0)
-  errorsCount    Int        @default(0)
+  recordsRead    Int             @default(0)
+  recordsSaved   Int             @default(0)
+  recordsUpdated Int             @default(0)
+  errorsCount    Int             @default(0)
   errorMessage   String?
   details        Json?
   triggeredById  String?
-  source         DataSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  source         DataSource      @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   snapshots      SalesSnapshot[]
   metrics        SalesMetric[]
 
@@ -558,20 +569,19 @@ model SalesMetric {
   @@index([date, metricCode])
 }
 
-
 // ───────── Навчання (етапи → уроки → тест) ─────────
 
 // Етап програми навчання. Відкривається, коли попередній етап повністю пройдено.
 model TrainingStage {
-  id          String     @id @default(uuid())
+  id          String           @id @default(uuid())
   title       String
-  description String     @default("")
-  position    Int        @default(0)
-  status      TestStatus @default(draft)
+  description String           @default("")
+  position    Int              @default(0)
+  status      TestStatus       @default(draft)
   testId      String?
-  test        Test?      @relation(fields: [testId], references: [id], onDelete: SetNull)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  test        Test?            @relation(fields: [testId], references: [id], onDelete: SetNull)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   lessons     TrainingLesson[]
 
   @@index([status, position])
@@ -579,21 +589,21 @@ model TrainingStage {
 
 // kind: text (BlockNote JSON у content) | video (посилання YouTube) | pdf (KnowledgeFile)
 model TrainingLesson {
-  id         String         @id @default(uuid())
-  slug       String?        @unique
+  id         String                  @id @default(uuid())
+  slug       String?                 @unique
   stageId    String
-  stage      TrainingStage  @relation(fields: [stageId], references: [id], onDelete: Cascade)
-  position   Int            @default(0)
+  stage      TrainingStage           @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  position   Int                     @default(0)
   kind       String
   title      String
   content    Json?
   videoUrl   String?
   fileId     String?
-  file       KnowledgeFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
-  version    Int            @default(1)
+  file       KnowledgeFile?          @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  version    Int                     @default(1)
   archivedAt DateTime?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
   done       TrainingLessonDone[]
   versions   TrainingLessonVersion[]
 
@@ -635,4 +645,36 @@ model MaintenanceWindow {
   createdAt   DateTime @default(now())
 
   @@index([endsAt])
+}
+
+// Відгуки читачів про статтю: «застаріло», «є помилка» тощо
+model KnowledgeFeedback {
+  id           String        @id @default(uuid())
+  itemId       String
+  userId       String
+  kind         String
+  comment      String        @default("")
+  status       String        @default("open")
+  createdAt    DateTime      @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+  item         KnowledgeItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([itemId])
+}
+
+// Підписки браузерів і встановлених PWA на push-сповіщення
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

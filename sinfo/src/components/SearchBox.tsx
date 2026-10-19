@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { api } from '@/services/api'
 
@@ -20,6 +20,7 @@ export default function SearchBox() {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
   const { pathname } = useLocation()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const term = q.trim()
@@ -64,6 +65,9 @@ export default function SearchBox() {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => results && setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && q.trim().length >= 2) navigate(`/search?q=${encodeURIComponent(q.trim())}`)
+        }}
         placeholder={pathname.startsWith('/materials') ? 'Пошук матеріалів…' : 'Пошук інструкцій…'}
         className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-sm text-ink outline-none focus:border-accent"
       />
@@ -85,6 +89,14 @@ export default function SearchBox() {
               </p>
             </Link>
           ))}
+          {results.length > 0 && (
+            <Link
+              to={`/search?q=${encodeURIComponent(q.trim())}`}
+              className="block border-t border-border px-4 py-2 text-center text-sm text-accent hover:bg-surface-2"
+            >
+              Усі результати
+            </Link>
+          )}
         </div>
       )}
     </div>

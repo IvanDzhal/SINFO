@@ -7,8 +7,9 @@ import { useFetch } from '@/hooks/useFetch'
 import { useCan } from '@/hooks/useCan'
 import { Card, Chip, Table, Tabs, qs, type Col } from '@/components/analytics/ui'
 import SalesSection from '@/components/analytics/SalesSection'
+import ExportButton from '@/components/ExportButton'
 
-type Tab = 'regions' | 'stores' | 'sellers' | 'materials'
+type Tab = 'regions' | 'stores' | 'sellers' | 'materials' | 'articles'
 
 interface Stats {
   total: number
@@ -226,6 +227,150 @@ function SellersTab({ regionId, storeId }: { regionId?: string; storeId?: string
   )
 }
 
+interface ArticleRow {
+  id: string
+  slug: string | null
+  type: 'instruction' | 'material' | 'news'
+  title: string
+  category: string | null
+  version: number
+  viewsCount: number
+  readers: number
+  publishedAt: string | null
+  lastReadAt: string | null
+}
+
+interface ReadersData {
+  item: { id: string; title: string; viewsCount: number }
+  readers: { name: string; login: string; store: string | null; region: string | null; readAt: string }[]
+}
+
+const ARTICLE_TYPES: Record<ArticleRow['type'], string> = {
+  instruction: 'Інструкція',
+  material: 'Матеріал',
+  news: 'Новина',
+}
+
+function ReadersPanel({ itemId, onClose }: { itemId: string; onClose: () => void }) {
+  const [data, setData] = useState<ReadersData | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    setData(null)
+    setFailed(false)
+    api
+      .get<ReadersData>(`/analytics/content/articles/${itemId}/readers`)
+      .then((r) => setData(r.data))
+      .catch(() => setFailed(true))
+  }, [itemId])
+
+  return (
+    <div className="mb-4 rounded-2xl border border-border bg-surface p-4">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h3 className="font-medium">{data?.item.title ?? 'Читачі'}</h3>
+        <button onClick={onClose} aria-label="Закрити">
+          <X size={18} />
+        </button>
+      </div>
+      {failed && <p className="text-danger">Не вдалося завантажити дані</p>}
+      {!data && !failed && <p className="text-muted">Завантаження...</p>}
+      {data && (
+        <>
+          <p className="mb-2 text-sm text-muted">
+            Відкриттів: {data.item.viewsCount} · прочитали: {data.readers.length}
+          </p>
+          {data.readers.length === 0 && <p className="text-sm text-muted">Ще ніхто не прочитав.</p>}
+          <ul className="max-h-72 divide-y divide-border overflow-y-auto text-sm">
+            {data.readers.map((r) => (
+              <li key={r.login + r.readAt} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+                <span>
+                  {r.name} <span className="text-xs text-muted">{r.login}</span>
+                </span>
+                <span className="text-xs text-muted">
+                  {[r.store, r.region].filter(Boolean).join(' · ')} · {fmtDate(r.readAt)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  )
+}
+
+function ArticlesTab() {
+  const [search, setSearch] = useState('')
+  const [debounced, setDebounced] = useState('')
+  const [type, setType] = useState('')
+  const [itemId, setItemId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 300)
+    return () => clearTimeout(t)
+  }, [search])
+
+  const articles = useFetch<ArticleRow>(`/analytics/content/articles${qs({ search: debounced, type })}`)
+
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap gap-2">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Пошук за назвою"
+          className="w-full max-w-sm rounded-xl border border-border bg-surface px-3 py-2 text-sm"
+        />
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="rounded-xl border border-border bg-surface px-3 py-2 text-sm"
+        >
+          <option value="">Усі типи</option>
+          <option value="instruction">Інструкції</option>
+          <option value="material">Матеріали</option>
+          <option value="news">Новини</option>
+        </select>
+      </div>
+      <p className="mb-3 text-xs text-muted">
+        «Відкриття» рахує кожне відкриття сторінки, «Прочитали» лише тих, хто провів на ній 10+ секунд
+        (у межах вашого доступу). Натисніть рядок, щоб побачити, хто читав.
+      </p>
+      {itemId && <ReadersPanel itemId={itemId} onClose={() => setItemId(null)} />}
+      <Table
+        rows={articles.data}
+        loading={articles.loading}
+        error={articles.error}
+        rowKey={(r) => r.id}
+        onRow={(r) => setItemId(r.id)}
+        columns={[
+          {
+            header: 'Стаття',
+            cell: (r) => (
+              <div>
+                <Link
+                  to={`/knowledge/${r.slug ?? r.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="font-medium text-accent hover:underline"
+                >
+                  {r.title}
+                </Link>
+                <p className="text-xs text-muted">
+                  {ARTICLE_TYPES[r.type]}
+                  {r.category && ` · ${r.category}`}
+                </p>
+              </div>
+            ),
+          },
+          { header: 'Відкриття', cell: (r) => r.viewsCount },
+          { header: 'Прочитали', cell: (r) => r.readers },
+          { header: 'Остання відмітка', cell: (r) => fmtDate(r.lastReadAt) },
+          { header: 'Опубліковано', cell: (r) => fmtDate(r.publishedAt) },
+        ]}
+      />
+    </>
+  )
+}
+
 function ContentSection() {
   const can = useCan()
   const canSellers = can('analytics.content.view_employee')
@@ -245,6 +390,7 @@ function ContentSection() {
     { key: 'stores', label: 'Магазини' },
     ...(canSellers ? [{ key: 'sellers' as Tab, label: 'Продавці' }] : []),
     { key: 'materials', label: 'Матеріали' },
+    { key: 'articles', label: 'Статті' },
   ]
 
   const groupCols = (withPlace: boolean): Col<GroupRow>[] => [
@@ -286,6 +432,12 @@ function ContentSection() {
         </div>
       )}
 
+      {can('analytics.content.export') && (
+        <div className="mb-3 flex justify-end">
+          <ExportButton url="/analytics/content/export" params={{ regionId: region?.id, storeId: store?.id }} />
+        </div>
+      )}
+
       <OverviewCards query={base} />
 
       <Tabs tabs={tabs} value={tab} onChange={setTab} />
@@ -320,6 +472,8 @@ function ContentSection() {
           columns={groupCols(true)}
         />
       )}
+
+      {tab === 'articles' && <ArticlesTab />}
 
       {tab === 'sellers' && canSellers && <SellersTab regionId={region?.id} storeId={store?.id} />}
 

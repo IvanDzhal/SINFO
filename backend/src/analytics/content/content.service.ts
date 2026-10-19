@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Actor } from '../../knowledge/helpers';
 import { userScopeWhere } from '../../testing/visibility';
 import { isVisibleTo } from './visibility';
+import type { Sheet } from '../../common/xlsx';
 
 // Продавець визначається так само, як у профілі (див. ProfileService)
 const SELLER_ROLE = 'Продавець';
@@ -263,5 +264,137 @@ export class ContentAnalyticsService {
         percent: percent(m.viewed, m.audience),
       }))
       .sort((a, b) => (a.percent ?? 101) - (b.percent ?? 101) || a.title.localeCompare(b.title));
+  }
+
+  // Статистика по кожній статті окремо: відкриття (усі) та унікальні читачі (у межах доступу)
+  async articles(viewer: Actor, scopes: Scope[], f: ContentFilters) {
+    const items = await this.prisma.knowledgeItem.findMany({
+      where: {
+        status: 'published',
+        ...(f.type ? { type: f.type } : {}),
+        ...(f.search ? { title: { contains: f.search, mode: 'insensitive' as const } } : {}),
+      },
+      select: {
+        id: true,
+        slug: true,
+        type: true,
+        title: true,
+        version: true,
+        viewsCount: true,
+        publishedAt: true,
+        updatedAt: true,
+        category: { select: { name: true } },
+      },
+    });
+    const readers = items.length
+      ? await this.prisma.knowledgeRead.groupBy({
+          by: ['itemId'],
+          where: {
+            itemId: { in: items.map((i) => i.id) },
+            user: userScopeWhere(scopes, viewer),
+            ...(f.from || f.to ? { readAt: { gte: f.from, lte: f.to } } : {}),
+          },
+          _count: { _all: true },
+          _max: { readAt: true },
+        })
+      : [];
+    const byItem = new Map(readers.map((r) => [r.itemId, r]));
+    return items
+      .map(({ category, ...i }) => ({
+        ...i,
+        category: category?.name ?? null,
+        readers: byItem.get(i.id)?._count._all ?? 0,
+        lastReadAt: byItem.get(i.id)?._max.readAt ?? null,
+      }))
+      .sort((a, b) => b.viewsCount - a.viewsCount || a.title.localeCompare(b.title));
+  }
+
+  async articleReaders(viewer: Actor, scopes: Scope[], itemId: string) {
+    const item = await this.prisma.knowledgeItem.findUnique({
+      where: { id: itemId },
+      select: { id: true, title: true, viewsCount: true },
+    });
+    if (!item) throw new NotFoundException('Матеріал не знайдено');
+    const reads = await this.prisma.knowledgeRead.findMany({
+      where: { itemId, user: userScopeWhere(scopes, viewer) },
+      orderBy: { readAt: 'desc' },
+      select: {
+        readAt: true,
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            login: true,
+            region: { select: { name: true } },
+            store: { select: { name: true } },
+          },
+        },
+      },
+    });
+    return {
+      item,
+      readers: reads.map((r) => ({
+        name: `${r.user.firstName} ${r.user.lastName}`,
+        login: r.user.login,
+        region: r.user.region?.name ?? null,
+        store: r.user.store?.name ?? null,
+        readAt: r.readAt,
+      })),
+    };
+  }
+
+  // Таблиці для Excel: прогрес по продавцях і статистика по статтях
+  async exportSheets(viewer: Actor, scopes: Scope[], f: ContentFilters): Promise<Sheet[]> {
+    const { sellers } = await this.compute(viewer, scopes, f);
+    const sellersSheet: Sheet = {
+      name: 'Продавці',
+      columns: [
+        { header: 'Працівник', key: 'name', width: 28 },
+        { header: 'Логін', key: 'login', width: 16 },
+        { header: 'Область', key: 'region', width: 22 },
+        { header: 'Магазин', key: 'store', width: 26 },
+        { header: 'Матеріалів', key: 'total', width: 12 },
+        { header: 'Переглянуто', key: 'viewed', width: 14 },
+        { header: 'Прогрес, %', key: 'percent', width: 12 },
+        { header: 'Обов’язкові, %', key: 'required', width: 16 },
+        { header: 'Остання активність', key: 'last', width: 20 },
+      ],
+      rows: sellers.map((s) => ({
+        name: s.name,
+        login: s.login,
+        region: s.region ?? '',
+        store: s.store ?? '',
+        total: s.total,
+        viewed: s.viewed,
+        percent: percent(s.viewed, s.total),
+        required: percent(s.requiredViewed, s.requiredTotal),
+        last: s.lastActivityAt,
+      })),
+    };
+
+    const articles = await this.articles(viewer, scopes, { ...f, search: undefined });
+    const TYPE: Record<string, string> = { instruction: 'Інструкція', material: 'Матеріал', news: 'Новина' };
+    const articlesSheet: Sheet = {
+      name: 'Статті',
+      columns: [
+        { header: 'Стаття', key: 'title', width: 44 },
+        { header: 'Тип', key: 'type', width: 14 },
+        { header: 'Категорія', key: 'category', width: 24 },
+        { header: 'Відкриття', key: 'views', width: 12 },
+        { header: 'Прочитали', key: 'readers', width: 12 },
+        { header: 'Остання відмітка', key: 'last', width: 20 },
+        { header: 'Опубліковано', key: 'published', width: 16 },
+      ],
+      rows: articles.map((a) => ({
+        title: a.title,
+        type: TYPE[a.type] ?? a.type,
+        category: a.category ?? '',
+        views: a.viewsCount,
+        readers: a.readers,
+        last: a.lastReadAt,
+        published: a.publishedAt,
+      })),
+    };
+    return [sellersSheet, articlesSheet];
   }
 }

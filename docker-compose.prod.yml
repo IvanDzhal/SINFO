@@ -40,6 +40,9 @@ services:
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env.production}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set in .env.production}
       LINK_SIGNING_SECRET: ${LINK_SIGNING_SECRET:?set in .env.production}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@sluhavka.com}
       CORS_ORIGINS: ${CORS_ORIGINS:?set in .env.production}
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://seaweedfs:8333

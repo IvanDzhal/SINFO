@@ -12,9 +12,24 @@ export class AuditService {
     entityType?: string;
     dateFrom?: string;
     dateTo?: string;
+    search?: string;
+    offset?: string;
+    limit?: string;
   }) {
+    const search = filters.search?.trim();
+    const limit = Math.min(Math.max(Number(filters.limit) || 50, 1), 200);
+    const offset = Math.max(Number(filters.offset) || 0, 0);
     return this.prisma.auditLog.findMany({
       where: {
+        actor: search
+          ? {
+              OR: [
+                { firstName: { contains: search, mode: 'insensitive' } },
+                { lastName: { contains: search, mode: 'insensitive' } },
+                { login: { contains: search, mode: 'insensitive' } },
+              ],
+            }
+          : undefined,
         actorId: filters.actorId,
         action: filters.action ? { contains: filters.action } : undefined,
         entityType: filters.entityType,
@@ -27,7 +42,8 @@ export class AuditService {
             : undefined,
       },
       orderBy: { createdAt: 'desc' },
-      take: 200,
+      skip: offset,
+      take: limit,
       include: { actor: { select: { login: true, firstName: true, lastName: true } } },
     });
   }

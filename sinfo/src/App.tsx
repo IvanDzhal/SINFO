@@ -5,7 +5,6 @@ import AdminLayout from '@/layouts/AdminLayout'
 import UserLayout from '@/layouts/UserLayout'
 import LoginPage from '@/pages/LoginPage'
 import HomePage from '@/pages/HomePage'
-import PlaceholderPage from '@/pages/PlaceholderPage'
 import DashboardPage from '@/pages/admin/DashboardPage'
 import UsersPage from '@/pages/admin/UsersPage'
 import UserEditPage from '@/pages/admin/UserEditPage'
@@ -18,6 +17,8 @@ import RoleEditPage from '@/pages/admin/RoleEditPage'
 import AuditLogPage from '@/pages/admin/AuditLogPage'
 import CategoriesPage from '@/pages/admin/CategoriesPage'
 import MaintenancePage from '@/pages/admin/MaintenancePage'
+import TrashPage from '@/pages/admin/TrashPage'
+import FeedbackPage from '@/pages/admin/FeedbackPage'
 import DataSyncPage from '@/pages/admin/DataSyncPage'
 import DataSourcePage from '@/pages/admin/DataSourcePage'
 import KnowledgeListPage from '@/pages/KnowledgeListPage'
@@ -32,10 +33,9 @@ import TrainingPage from '@/pages/TrainingPage'
 import TrainingLessonPage from '@/pages/TrainingLessonPage'
 import TrainingManagePage from '@/pages/TrainingManagePage'
 import AboutPage from '@/pages/AboutPage'
+import SearchPage from '@/pages/SearchPage'
 import ProfilePage from '@/pages/ProfilePage'
 import ProfileSettingsPage from '@/pages/ProfileSettingsPage'
-
-const stubs: { path: string; title: string }[] = []
 
 function App() {
   return (
@@ -61,12 +61,10 @@ function App() {
             <Route path="knowledge/:id/edit" element={<KnowledgeEditPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="about" element={<AboutPage />} />
+            <Route path="search" element={<SearchPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="profile/settings" element={<ProfileSettingsPage />} />
             <Route path="profile/:id" element={<ProfilePage />} />
-            {stubs.map((s) => (
-              <Route key={s.path} path={s.path} element={<PlaceholderPage title={s.title} />} />
-            ))}
           </Route>
 
           <Route element={<ProtectedRoute permission="admin.access" />}>
@@ -81,6 +79,8 @@ function App() {
               <Route path="roles" element={<RolesPage />} />
               <Route path="roles/:id" element={<RoleEditPage />} />
               <Route path="maintenance" element={<MaintenancePage />} />
+              <Route path="trash" element={<TrashPage />} />
+              <Route path="feedback" element={<FeedbackPage />} />
               <Route path="audit-log" element={<AuditLogPage />} />
               <Route path="data-sync" element={<DataSyncPage />} />
               <Route path="data-sync/:id" element={<DataSourcePage />} />
