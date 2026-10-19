@@ -102,8 +102,9 @@ export class ItemsService {
     const where = await this.visibleWhere(user);
     const items = await this.prisma.knowledgeItem.findMany({
       where: { ...where, type },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: [{ pinnedAt: { sort: 'desc', nulls: 'last' } }, { updatedAt: 'desc' }],
       select: {
+        pinnedAt: true,
         id: true,
         slug: true,
         type: true,
@@ -405,6 +406,81 @@ export class ItemsService {
         children: cats
           .filter((s) => s.parentId === c.id && own.has(s.id))
           .map((s) => ({ id: s.id, name: s.name, icon: s.icon, count: own.get(s.id) ?? 0 })),
+      }));
+  }
+
+  // Повний пошук: релевантність, фрагмент тексту навколо збігу, фільтр за типом
+  async searchFull(user: Viewer, q: string, type?: string) {
+    const words = q.trim().split(/\s+/).filter((w) => w.length >= 2).slice(0, 6);
+    if (words.length === 0) return [];
+    const kind =
+      type && (Object.values(KnowledgeType) as string[]).includes(type)
+        ? (type as KnowledgeType)
+        : undefined;
+    if (kind === 'news') await this.requirePermission(user, 'knowledge.view_news');
+    const where = await this.visibleWhere(user);
+    const rows = await this.prisma.knowledgeItem.findMany({
+      where: {
+        AND: [
+          where,
+          kind ? { type: kind } : { type: { in: ['instruction', 'material'] } },
+          ...words.map((w) => ({
+            OR: [
+              { title: { contains: w, mode: 'insensitive' as const } },
+              { description: { contains: w, mode: 'insensitive' as const } },
+              { contentText: { contains: w, mode: 'insensitive' as const } },
+            ],
+          })),
+        ],
+      },
+      take: 100,
+      select: {
+        id: true,
+        slug: true,
+        type: true,
+        title: true,
+        description: true,
+        contentText: true,
+        pinnedAt: true,
+        updatedAt: true,
+        category: { select: { name: true } },
+      },
+    });
+
+    const lower = words.map((w) => w.toLowerCase());
+    const score = (r: (typeof rows)[number]) =>
+      lower.reduce(
+        (s, x) =>
+          s +
+          (r.title.toLowerCase().includes(x) ? 5 : 0) +
+          (r.description.toLowerCase().includes(x) ? 2 : 0) +
+          (r.contentText.toLowerCase().includes(x) ? 1 : 0),
+        r.pinnedAt ? 1 : 0,
+      );
+
+    const snippet = (text: string) => {
+      const low = text.toLowerCase();
+      const at = lower.map((x) => low.indexOf(x)).filter((i) => i >= 0);
+      if (at.length === 0) return '';
+      const from = Math.max(0, Math.min(...at) - 60);
+      const part = text.slice(from, from + 220).replace(/\s+/g, ' ').trim();
+      return `${from > 0 ? '…' : ''}${part}${from + 220 < text.length ? '…' : ''}`;
+    };
+
+    return rows
+      .map((r) => ({ r, s: score(r) }))
+      .sort((a, b) => b.s - a.s || b.r.updatedAt.getTime() - a.r.updatedAt.getTime())
+      .slice(0, 50)
+      .map(({ r }) => ({
+        id: r.id,
+        slug: r.slug,
+        type: r.type,
+        title: r.title,
+        description: r.description,
+        // фрагмент з тексту показуємо, лише якщо збіг не в назві й не в описі
+        snippet: snippet(r.contentText),
+        category: r.category,
+        updatedAt: r.updatedAt,
       }));
   }
 }

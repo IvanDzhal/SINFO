@@ -52,6 +52,12 @@ export class CategoriesController {
   }
 
   @Permissions('knowledge.manage_categories')
+  @Delete(':id/purge')
+  purge(@Req() req: any, @Param('id') id: string) {
+    return this.service.purge(req.user.id, id);
+  }
+
+  @Permissions('knowledge.manage_categories')
   @Delete(':id')
   archive(@Req() req: any, @Param('id') id: string) {
     return this.service.archive(req.user.id, id);

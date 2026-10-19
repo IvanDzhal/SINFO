@@ -282,7 +282,7 @@ export default function KnowledgeEditPage() {
   }
 
   function remove() {
-    if (!window.confirm('Видалити чернетку назавжди?')) return
+    if (!window.confirm('Перемістити матеріал у кошик? Його можна відновити протягом 30 днів.')) return
     run(
       () => api.delete(`/knowledge/manage/items/${id}`),
       () => navigate(BACK[type]),
@@ -517,7 +517,7 @@ export default function KnowledgeEditPage() {
         {message && <span className="text-sm text-success">{message}</span>}
         {error && <span className="text-sm text-danger">{error}</span>}
 
-        {!isNew && status === 'draft' && can('knowledge.delete') && (
+        {!isNew && can('knowledge.delete') && (
           <Button variant="ghost" onClick={remove} disabled={busy}>
             <span className="text-danger">Видалити</span>
           </Button>

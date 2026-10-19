@@ -70,6 +70,18 @@ export class ManageController {
     return this.service.restore(req.user, id);
   }
 
+  @Permissions('knowledge.edit')
+  @Post('items/:id/pin')
+  pin(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {
+    return this.service.setPinned(req.user, id, true);
+  }
+
+  @Permissions('knowledge.edit')
+  @Post('items/:id/unpin')
+  unpin(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {
+    return this.service.setPinned(req.user, id, false);
+  }
+
   @Permissions('knowledge.delete')
   @Delete('items/:id')
   remove(@Req() req: any, @Param('id', ItemKeyPipe) id: string) {

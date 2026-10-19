@@ -27,9 +27,10 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { DataSyncModule } from './datasync/datasync.module';
 import { TrainingModule } from './training/training.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
+import { FeedbackModule } from './knowledge/feedback/feedback.module';
 
 @Module({
-  imports: [ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]), PrismaModule, AuthModule, AuditModule, RegionsModule, CitiesModule, BrandsModule, StoresModule, PermissionsModule, RolesModule, UsersModule, DashboardModule, PresenceModule, CategoriesModule, ItemsModule, ManageModule, FilesModule, NotificationsModule, TestingModule, ProfileModule, AvatarModule, AnalyticsModule, DataSyncModule, TrainingModule, MaintenanceModule],
+  imports: [ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]), PrismaModule, AuthModule, AuditModule, RegionsModule, CitiesModule, BrandsModule, StoresModule, PermissionsModule, RolesModule, UsersModule, DashboardModule, PresenceModule, CategoriesModule, ItemsModule, ManageModule, FilesModule, NotificationsModule, TestingModule, ProfileModule, AvatarModule, AnalyticsModule, DataSyncModule, TrainingModule, MaintenanceModule, FeedbackModule],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

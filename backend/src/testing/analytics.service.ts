@@ -7,10 +7,12 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { Actor, scopesFor } from '../knowledge/helpers';
+import { AuditService } from '../audit/audit.service';
 import { AttemptsService } from './attempts.service';
 import { describeAnswer, describeCorrect } from './grading';
 import { computeStatus, MyStatus } from './status';
 import { assignedUsersWhere, userScopeWhere } from './visibility';
+import type { Sheet } from '../common/xlsx';
 
 type Filters = { testId?: string; storeId?: string; regionId?: string; search?: string };
 
@@ -83,9 +85,21 @@ function group(rows: Row[], key: (r: Row) => string) {
 const seconds = (from: Date, to: Date) =>
   Math.max(0, Math.round((to.getTime() - from.getTime()) / 1000));
 
+const STATUS_UK: Record<string, string> = {
+  passed: 'Пройдено',
+  failed: 'Не пройдено',
+  in_progress: 'В процесі',
+  not_started: 'Не розпочато',
+  overdue: 'Прострочено',
+};
+
 @Injectable()
 export class AnalyticsService {
-  constructor(private prisma: PrismaService, private attempts: AttemptsService) {}
+  constructor(
+    private prisma: PrismaService,
+    private attempts: AttemptsService,
+    private audit: AuditService,
+  ) {}
 
   // Усі призначення (тест × працівник) у межах доступу керівника
   private async load(viewer: Actor, f: Filters) {
@@ -232,6 +246,55 @@ export class AnalyticsService {
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+  }
+
+  // Таблиці для Excel: по кожному призначенню (тест × працівник) і зведення по тестах
+  async exportSheets(viewer: Actor, f: Filters): Promise<Sheet[]> {
+    const { tests, rows, times } = await this.load(viewer, f);
+    const titles = new Map(tests.map((t) => [t.id, t.title]));
+    const results: Sheet = {
+      name: 'Результати',
+      columns: [
+        { header: 'Тест', key: 'test', width: 36 },
+        { header: 'Працівник', key: 'name', width: 28 },
+        { header: 'Логін', key: 'login', width: 16 },
+        { header: 'Область', key: 'region', width: 22 },
+        { header: 'Магазин', key: 'store', width: 26 },
+        { header: 'Статус', key: 'status', width: 16 },
+        { header: 'Найкращий результат, %', key: 'best', width: 22 },
+      ],
+      rows: rows
+        .map((r) => ({
+          test: titles.get(r.testId) ?? '',
+          name: `${r.user.firstName} ${r.user.lastName}`,
+          login: r.user.login,
+          region: r.user.region?.name ?? '',
+          store: r.user.store?.name ?? '',
+          status: STATUS_UK[r.status] ?? r.status,
+          best: r.best === null ? null : Math.floor(r.best),
+        }))
+        .sort((a, b) => a.test.localeCompare(b.test, 'uk') || a.name.localeCompare(b.name, 'uk')),
+    };
+    const overview: Sheet = {
+      name: 'Зведення по тестах',
+      columns: [
+        { header: 'Тест', key: 'title', width: 36 },
+        { header: 'Призначено', key: 'assigned', width: 14 },
+        { header: 'Пройшли', key: 'passed', width: 12 },
+        { header: 'Середній час, хв', key: 'avg', width: 18 },
+      ],
+      rows: tests.map((t) => {
+        const list = rows.filter((r) => r.testId === t.id);
+        const secs = times.get(t.id) ?? [];
+        return {
+          title: t.title,
+          assigned: list.length,
+          passed: list.filter((r) => r.status === 'passed').length,
+          avg: secs.length ? Math.round(secs.reduce((a, b) => a + b, 0) / secs.length / 60) : null,
+        };
+      }),
+    };
+    return [results, overview];
   }
 
   async questions(viewer: Actor, testId: string) {
@@ -432,5 +495,72 @@ export class AnalyticsService {
       },
       items,
     };
+  }
+
+  private async editableAttempt(viewer: Actor, attemptId: string) {
+    const attempt = await this.prisma.testAttempt.findUnique({
+      where: { id: attemptId },
+      include: { test: { select: { title: true, passingScorePercent: true } } },
+    });
+    if (!attempt) throw new NotFoundException('Спробу не знайдено');
+    const scopes = await scopesFor(this.prisma, viewer.id, 'testing.edit_results');
+    const allowed = await this.prisma.user.findFirst({
+      where: { AND: [{ id: attempt.userId }, userScopeWhere(scopes, viewer)] },
+      select: { id: true },
+    });
+    if (!allowed) throw new ForbiddenException('Немає доступу до результатів цього користувача');
+    return attempt;
+  }
+
+  async removeAttempt(viewer: Actor, attemptId: string) {
+    const attempt = await this.editableAttempt(viewer, attemptId);
+    await this.prisma.testAttempt.delete({ where: { id: attemptId } });
+    await this.audit.log(viewer.id, 'test_attempt.deleted', 'TestAttempt', attemptId, {
+      test: attempt.test.title,
+      userId: attempt.userId,
+      attemptNumber: attempt.attemptNumber,
+    });
+    return { ok: true };
+  }
+
+  // Ручна зміна балів за питання; підсумок і статус «пройдено» перераховуються
+  async setAnswerScore(viewer: Actor, attemptId: string, questionId: string, score: number) {
+    const attempt = await this.editableAttempt(viewer, attemptId);
+    if (attempt.status !== 'completed') throw new BadRequestException('Спробу ще не завершено');
+
+    const row = await this.prisma.testAnswer.findUnique({
+      where: { attemptId_questionId: { attemptId, questionId } },
+      include: { question: { select: { points: true } } },
+    });
+    if (!row) throw new NotFoundException('Відповідь не знайдено');
+    const value = Number(score);
+    if (!Number.isInteger(value) || value < 0 || value > row.question.points) {
+      throw new BadRequestException(`Бали мають бути від 0 до ${row.question.points}`);
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.testAnswer.update({
+        where: { id: row.id },
+        data: { score: value, isCorrect: value === row.question.points },
+      });
+      const all = await tx.testAnswer.findMany({
+        where: { attemptId },
+        select: { score: true },
+      });
+      const total = all.reduce((sum, a) => sum + (a.score ?? 0), 0);
+      const percent = attempt.maxScore > 0 ? (total / attempt.maxScore) * 100 : 0;
+      const passed =
+        attempt.maxScore > 0 && total * 100 >= attempt.test.passingScorePercent * attempt.maxScore;
+      return tx.testAttempt.update({
+        where: { id: attemptId },
+        data: { score: total, scorePercent: Math.round(percent * 10) / 10, passed },
+        select: { score: true, maxScore: true, scorePercent: true, passed: true },
+      });
+    });
+    await this.audit.log(viewer.id, 'test_attempt.updated', 'TestAttempt', attemptId, {
+      questionId,
+      score: value,
+    });
+    return result;
   }
 }

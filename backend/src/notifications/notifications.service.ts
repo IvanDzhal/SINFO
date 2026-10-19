@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PushService } from './push.service';
 
 type Rule = { kind: string; targetId: string | null };
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private push: PushService) {}
 
   async list(userId: string) {
     const [unread, items] = await Promise.all([
@@ -60,6 +61,10 @@ export class NotificationsService {
       })),
       skipDuplicates: true,
     });
+    this.push.sendToUsers(
+      users.map((u) => u.id),
+      { title: item.title, body: item.description, link },
+    );
     return res.count;
   }
 
@@ -123,6 +128,7 @@ export class NotificationsService {
       })),
       skipDuplicates: true,
     });
+    this.push.sendToUsers(userIds, { title: n.title, body: n.body, link: n.link });
     return res.count;
   }
 }

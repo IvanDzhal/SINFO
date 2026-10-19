@@ -1,4 +1,5 @@
-import { BadRequestException, Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { xlsxResponse } from '../../common/xlsx';
 import { KnowledgeType, Scope } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
@@ -67,6 +68,29 @@ export class ContentAnalyticsController {
   @Get('materials')
   materials(@Req() req: any, @Query() q: ContentQuery) {
     return this.service.materials(req.user, scopesOf(req, 'analytics.content.view'), filters(q));
+  }
+
+  @Permissions('analytics.content.export')
+  @Get('export')
+  async export(@Req() req: any, @Res({ passthrough: true }) res: any, @Query() q: ContentQuery) {
+    const sheets = await this.service.exportSheets(
+      req.user,
+      scopesOf(req, 'analytics.content.export'),
+      filters(q),
+    );
+    return xlsxResponse(res, 'perehliady-materialiv', sheets);
+  }
+
+  @Permissions('analytics.content.view')
+  @Get('articles')
+  articles(@Req() req: any, @Query() q: ContentQuery) {
+    return this.service.articles(req.user, scopesOf(req, 'analytics.content.view'), filters(q));
+  }
+
+  @Permissions('analytics.content.view')
+  @Get('articles/:itemId/readers')
+  readers(@Req() req: any, @Param('itemId') itemId: string) {
+    return this.service.articleReaders(req.user, scopesOf(req, 'analytics.content.view'), itemId);
   }
 
   @Permissions('analytics.content.view_employee')

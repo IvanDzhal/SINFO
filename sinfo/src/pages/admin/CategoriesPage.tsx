@@ -14,6 +14,7 @@ interface Category {
   icon: string | null
   parentId: string | null
   archivedAt: string | null
+  trashedAt?: string | null
 }
 
 type ModalState =
@@ -93,7 +94,9 @@ function CategoryModal({
 }
 
 export default function CategoriesPage() {
-  const { data, loading, error, reload } = useFetch<Category>('/knowledge/categories?archived=1')
+  const { data: all, loading, error, reload } = useFetch<Category>('/knowledge/categories?archived=1')
+  // видалені категорії лежать у кошику (Адмінка → Кошик)
+  const data = all.filter((c) => !c.trashedAt)
   const can = useCan()
   const canManage = can('knowledge.manage_categories')
   const [modal, setModal] = useState<ModalState>(null)
@@ -121,6 +124,17 @@ export default function CategoriesPage() {
     act(() => api.delete(`/knowledge/categories/${c.id}`))
   }
 
+  function purge(c: Category) {
+    const extra = c.parentId ? '' : ' Підкатегорії теж будуть видалені.'
+    if (
+      !window.confirm(
+        `Перемістити «${c.name}» у кошик?${extra} Матеріали й тести цієї категорії залишаться без категорії. Відновити можна протягом 30 днів.`,
+      )
+    )
+      return
+    act(() => api.delete(`/knowledge/categories/${c.id}/purge`))
+  }
+
   function renderRow(c: Category, list: Category[], sub = false) {
     const active = list.filter((x) => !x.archivedAt)
     const idx = active.findIndex((x) => x.id === c.id)
@@ -142,9 +156,14 @@ export default function CategoriesPage() {
         {canManage && (
           <div className="flex items-center gap-3 text-sm">
             {archived ? (
-              <button className="text-accent hover:underline" onClick={() => restore(c)}>
-                Відновити
-              </button>
+              <>
+                <button className="text-accent hover:underline" onClick={() => restore(c)}>
+                  Відновити
+                </button>
+                <button className="text-danger hover:underline" onClick={() => purge(c)}>
+                  Видалити
+                </button>
+              </>
             ) : (
               <>
                 <button
@@ -179,6 +198,9 @@ export default function CategoriesPage() {
                 </button>
                 <button className="text-danger hover:underline" onClick={() => archive(c)}>
                   Архівувати
+                </button>
+                <button className="text-danger hover:underline" onClick={() => purge(c)}>
+                  Видалити
                 </button>
               </>
             )}

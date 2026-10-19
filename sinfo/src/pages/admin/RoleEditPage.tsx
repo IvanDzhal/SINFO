@@ -69,6 +69,7 @@ const GROUPS: { key: string; label: string; items: [string, string][] }[] = [
       ['testing.manage_deadlines', 'Керування термінами'],
       ['testing.view_results', 'Перегляд результатів'],
       ['testing.view_answers', 'Перегляд відповідей'],
+      ['testing.edit_results', 'Редагування й видалення результатів'],
       ['testing.view_attempts', 'Перегляд спроб'],
       ['testing.view_analytics', 'Аналітика тестування'],
     ],

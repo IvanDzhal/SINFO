@@ -218,20 +218,47 @@ export class ManageService {
   }
 
   async restore(user: Actor, id: string) {
-    const item = await this.loadManageable(user, id, 'knowledge.archive');
+    const item = await this.loadManageable(user, id, 'knowledge.archive', true);
+    if (item.status === 'trashed') {
+      // з кошика повертаємо в той стан, у якому матеріал був до видалення
+      await this.prisma.$executeRaw`UPDATE "KnowledgeItem" SET "status" = ${item.trashedFrom ?? 'draft'}::"KnowledgeStatus", "trashedAt" = NULL, "trashedFrom" = NULL WHERE "id" = ${id}`;
+      await this.audit.log(user.id, 'knowledge_item.untrashed', 'KnowledgeItem', id, {
+        title: item.title,
+      });
+      return { ok: true };
+    }
     if (item.status !== 'archived') throw new BadRequestException('Матеріал не в архіві');
     await this.prisma.knowledgeItem.update({ where: { id }, data: { status: 'draft' } });
     await this.audit.log(user.id, 'knowledge_item.restored', 'KnowledgeItem', id);
     return { ok: true };
   }
 
+  // Перше видалення переносить у кошик, повторне (з кошика) видаляє назавжди
   async remove(user: Actor, id: string) {
-    const item = await this.loadManageable(user, id, 'knowledge.delete');
-    if (item.status !== 'draft') {
-      throw new BadRequestException('Видалити можна лише чернетку. Для решти використайте архів');
+    const item = await this.loadManageable(user, id, 'knowledge.delete', true);
+    if (item.status === 'trashed') {
+      await this.prisma.knowledgeItem.delete({ where: { id } });
+      await this.audit.log(user.id, 'knowledge_item.deleted', 'KnowledgeItem', id, {
+        title: item.title,
+      });
+      return { ok: true };
     }
-    await this.prisma.knowledgeItem.delete({ where: { id } });
-    await this.audit.log(user.id, 'knowledge_item.deleted', 'KnowledgeItem', id, {
+    // raw-запит, щоб не змінювати дату «Оновлено»
+    await this.prisma.$executeRaw`UPDATE "KnowledgeItem" SET "trashedFrom" = "status", "status" = 'trashed', "trashedAt" = NOW() WHERE "id" = ${id}`;
+    await this.audit.log(user.id, 'knowledge_item.trashed', 'KnowledgeItem', id, {
+      title: item.title,
+    });
+    return { ok: true, trashed: true };
+  }
+
+  // Закріплення стаття отримує вгорі списку (нові закріплені першими)
+  async setPinned(user: Actor, id: string, pinned: boolean) {
+    const item = await this.loadManageable(user, id, 'knowledge.edit');
+    if (item.status !== 'published') {
+      throw new BadRequestException('Закріпити можна лише опублікований матеріал');
+    }
+    await this.prisma.$executeRaw`UPDATE "KnowledgeItem" SET "pinnedAt" = ${pinned ? new Date() : null} WHERE "id" = ${id}`;
+    await this.audit.log(user.id, pinned ? 'knowledge_item.pinned' : 'knowledge_item.unpinned', 'KnowledgeItem', id, {
       title: item.title,
     });
     return { ok: true };
@@ -239,12 +266,15 @@ export class ManageService {
 
   // ---------- допоміжне ----------
 
-  private async loadManageable(user: Actor, id: string, code: string) {
+  private async loadManageable(user: Actor, id: string, code: string, allowTrashed = false) {
     const item = await this.prisma.knowledgeItem.findUnique({
       where: { id },
       include: { visibility: true },
     });
     if (!item) throw new NotFoundException('Матеріал не знайдено');
+    if (item.status === 'trashed' && !allowTrashed) {
+      throw new BadRequestException('Матеріал у кошику. Спершу відновіть його');
+    }
     const scopes = await scopesFor(this.prisma, user.id, code);
     const ok = await this.prisma.knowledgeItem.findFirst({
       where: { AND: [{ id }, authorWhere(scopes, user)] },

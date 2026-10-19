@@ -92,6 +92,39 @@ export class CategoriesService {
     return { ok: true };
   }
 
+  // Перше видалення ховає категорію (з підкатегоріями) в кошик, повторне видаляє назавжди.
+  // Матеріали й тести лишаються без категорії.
+  async purge(actorId: string, id: string) {
+    const cat = await this.get(id);
+    if (!cat.trashedAt) {
+      await this.prisma.knowledgeCategory.updateMany({
+        where: { OR: [{ id }, { parentId: id }] },
+        data: { trashedAt: new Date(), archivedAt: new Date() },
+      });
+      await this.audit.log(actorId, 'knowledge_category.trashed', 'KnowledgeCategory', id, {
+        name: cat.name,
+      });
+      return { ok: true, trashed: true };
+    }
+    const ids = [
+      id,
+      ...(await this.prisma.knowledgeCategory.findMany({ where: { parentId: id }, select: { id: true } })).map(
+        (c) => c.id,
+      ),
+    ];
+    await this.prisma.$transaction([
+      // raw-запит, щоб не змінювати дату «Оновлено» матеріалів
+      this.prisma.$executeRaw`UPDATE "KnowledgeItem" SET "categoryId" = NULL WHERE "categoryId" = ANY(${ids})`,
+      this.prisma.test.updateMany({ where: { categoryId: { in: ids } }, data: { categoryId: null } }),
+      this.prisma.knowledgeCategory.deleteMany({ where: { parentId: id } }),
+      this.prisma.knowledgeCategory.delete({ where: { id } }),
+    ]);
+    await this.audit.log(actorId, 'knowledge_category.deleted', 'KnowledgeCategory', id, {
+      name: cat.name,
+    });
+    return { ok: true };
+  }
+
   async restore(actorId: string, id: string) {
     const cat = await this.get(id);
     if (cat.parentId) {
@@ -100,7 +133,10 @@ export class CategoriesService {
         throw new BadRequestException('Спочатку відновіть батьківську категорію');
       }
     }
-    await this.prisma.knowledgeCategory.update({ where: { id }, data: { archivedAt: null } });
+    await this.prisma.knowledgeCategory.updateMany({
+      where: cat.trashedAt ? { OR: [{ id }, { parentId: id, trashedAt: { not: null } }] } : { id },
+      data: { archivedAt: null, trashedAt: null },
+    });
     await this.audit.log(actorId, 'knowledge_category.restored', 'KnowledgeCategory', id);
     return { ok: true };
   }

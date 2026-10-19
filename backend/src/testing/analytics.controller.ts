@@ -1,4 +1,5 @@
-import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { xlsxResponse } from '../common/xlsx';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
@@ -51,6 +52,20 @@ export class AnalyticsController {
   }
 
   @Permissions('testing.view_analytics')
+  @Get('export')
+  async export(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: any,
+    @Query('testId') testId?: string,
+    @Query('storeId') storeId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('search') search?: string,
+  ) {
+    const sheets = await this.service.exportSheets(req.user, { testId, storeId, regionId, search });
+    return xlsxResponse(res, 'rezultaty-testiv', sheets);
+  }
+
+  @Permissions('testing.view_analytics')
   @Get('questions')
   questions(@Req() req: any, @Query('testId') testId: string) {
     return this.service.questions(req.user, testId);
@@ -66,5 +81,22 @@ export class AnalyticsController {
   @Get('attempts/:attemptId/answers')
   answers(@Req() req: any, @Param('attemptId') attemptId: string) {
     return this.service.attemptAnswers(req.user, attemptId);
+  }
+
+  @Permissions('testing.edit_results')
+  @Delete('attempts/:attemptId')
+  removeAttempt(@Req() req: any, @Param('attemptId') attemptId: string) {
+    return this.service.removeAttempt(req.user, attemptId);
+  }
+
+  @Permissions('testing.edit_results')
+  @Patch('attempts/:attemptId/answers/:questionId')
+  setScore(
+    @Req() req: any,
+    @Param('attemptId') attemptId: string,
+    @Param('questionId') questionId: string,
+    @Body('score') score: number,
+  ) {
+    return this.service.setAnswerScore(req.user, attemptId, questionId, score);
   }
 }

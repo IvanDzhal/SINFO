@@ -8,6 +8,7 @@ import { Input, Select } from '@/components/Field'
 import { StatusBadge } from '@/components/DataTable'
 import { useCan } from '@/hooks/useCan'
 import { getErrorMessage } from '@/utils/errors'
+import UserResultsDrawer from '@/components/UserResultsDrawer'
 import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface Item {
@@ -80,6 +81,7 @@ export default function UserEditPage() {
   const { id } = useParams()
   const can = useCan()
   const navigate = useNavigate()
+  const [resultsOpen, setResultsOpen] = useState(false)
 
   const [user, setUser] = useState<UserDetail | null>(null)
   usePageTitle(user && `Адмінка: ${user.firstName} ${user.lastName}`)
@@ -212,7 +214,7 @@ export default function UserEditPage() {
   }
 
   const removeUser = async () => {
-    if (!window.confirm('Видалити користувача назавжди? Це не можна скасувати.')) return
+    if (!window.confirm('Видалити користувача назавжди? Буде видалено його спроби тестів і відмітки прочитання. Створені ним матеріали перейдуть до вас. Це не можна скасувати.')) return
     try {
       await api.delete(`/core/users/${id}`)
       navigate('/admin/users')
@@ -262,7 +264,22 @@ export default function UserEditPage() {
         </h2>
         <StatusBadge status={user.status} />
         <span className="text-sm text-muted">{user.login}</span>
+        <div className="ml-auto flex gap-2">
+          <Link
+            to={`/profile/${encodeURIComponent(user.login)}`}
+            className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-surface-2"
+          >
+            Профіль
+          </Link>
+          <button
+            onClick={() => setResultsOpen(true)}
+            className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-surface-2"
+          >
+            Результати тестів
+          </button>
+        </div>
       </div>
+      {resultsOpen && <UserResultsDrawer userId={user.id} onClose={() => setResultsOpen(false)} />}
 
       {notice && (
         <p
@@ -406,8 +423,8 @@ export default function UserEditPage() {
         {can('core.users.delete') && (
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
             <p className="max-w-md text-sm text-muted">
-              Видалення можливе лише для акаунтів без історії (наприклад, створених помилково).
-              Для звільнених скористайтесь «Деактивувати».
+              Видалення прибирає акаунт разом з результатами тестів. Для звільнених краще
+              скористатись «Деактивувати», щоб зберегти історію.
             </p>
             <Button variant="ghost" onClick={removeUser}>
               <span className="text-danger">Видалити назавжди</span>

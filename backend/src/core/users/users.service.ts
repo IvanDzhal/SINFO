@@ -95,9 +95,11 @@ export class UsersService {
 
   async update(actorId: string, id: string, dto: UpdateUserDto) {
     await this.get(id);
+    // статус змінюється лише окремими діями «Деактивувати» / «Активувати» (власне право + захист від самоблокування)
+    const { status: _status, ...data } = dto;
     const user = await this.prisma.user.update({
       where: { id },
-      data: dto,
+      data,
       include: SAFE_INCLUDE,
     });
     await this.audit.log(actorId, 'user.updated', 'User', id, { ...dto });
@@ -177,21 +179,38 @@ export class UsersService {
     return this.get(id);
   }
 
+  // Повне видалення: особисті дані (спроби, прочитане, присутність) видаляються,
+  // створені користувачем матеріали й тести переходять до того, хто видаляє,
+  // записи журналу лишаються без автора
   async remove(actorId: string, id: string) {
     if (id === actorId) throw new BadRequestException('Не можна видалити себе');
     const user = await this.get(id);
-    const actions = await this.prisma.auditLog.count({ where: { actorId: id } });
-    if (user.lastLoginAt || actions > 0) {
-      throw new BadRequestException(
-        'У користувача є історія (входи або дії в системі). Видалення зламає журнал, тому скористайтесь «Деактивувати»',
-      );
+
+    const isAdmin = await this.prisma.userRole.findFirst({
+      where: { userId: id, role: { name: 'Адмін' } },
+    });
+    if (isAdmin) {
+      const others = await this.prisma.userRole.count({
+        where: { userId: { not: id }, role: { name: 'Адмін' }, user: { status: 'active' } },
+      });
+      if (others === 0) throw new BadRequestException('Не можна видалити останнього адміна');
     }
-  await this.prisma.$transaction([
-    this.prisma.userRole.deleteMany({ where: { userId: id } }),
-    this.prisma.userRegion.deleteMany({ where: { userId: id } }),
-    this.prisma.user.delete({ where: { id } }),
-  ]);
-  await this.audit.log(actorId, 'user.deleted', 'User', id, { login: user.login });
-  return { ok: true };
+
+    await this.prisma.$transaction([
+      // raw-запити, щоб не змінювати дату «Оновлено»
+      this.prisma.$executeRaw`UPDATE "KnowledgeItem" SET "authorId" = ${actorId} WHERE "authorId" = ${id}`,
+      this.prisma.$executeRaw`UPDATE "Test" SET "createdById" = ${actorId} WHERE "createdById" = ${id}`,
+      this.prisma.knowledgeVersion.updateMany({ where: { authorId: id }, data: { authorId: actorId } }),
+      this.prisma.knowledgeFile.updateMany({ where: { uploadedById: id }, data: { uploadedById: actorId } }),
+      this.prisma.auditLog.updateMany({ where: { actorId: id }, data: { actorId: null } }),
+      this.prisma.testAttempt.deleteMany({ where: { userId: id } }),
+      this.prisma.knowledgeRead.deleteMany({ where: { userId: id } }),
+      this.prisma.userPresence.deleteMany({ where: { userId: id } }),
+      this.prisma.userRole.deleteMany({ where: { userId: id } }),
+      this.prisma.userRegion.deleteMany({ where: { userId: id } }),
+      this.prisma.user.delete({ where: { id } }),
+    ]);
+    await this.audit.log(actorId, 'user.deleted', 'User', id, { login: user.login });
+    return { ok: true };
   }
 }

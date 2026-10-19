@@ -4,6 +4,7 @@ import clsx from 'clsx'
 import { api } from '@/services/api'
 import { useCan } from '@/hooks/useCan'
 import Modal from '@/components/Modal'
+import { getErrorMessage } from '@/utils/errors'
 import TestStatusBadge, { type MyStatus } from '@/components/TestStatusBadge'
 
 interface AttemptRow {
@@ -67,16 +68,39 @@ function fmtTime(sec: number | null) {
   return `${Math.floor(sec / 60)} хв ${sec % 60} с`
 }
 
-function AnswersModal({ attemptId, onClose }: { attemptId: string; onClose: () => void }) {
+function AnswersModal({
+  attemptId,
+  onClose,
+  onChanged,
+}: {
+  attemptId: string
+  onClose: () => void
+  onChanged: () => void
+}) {
+  const can = useCan()
   const [data, setData] = useState<AnswersData | null>(null)
   const [error, setError] = useState('')
 
-  useEffect(() => {
+  const load = () =>
     api
       .get<AnswersData>(`/testing/analytics/attempts/${attemptId}/answers`)
       .then((r) => setData(r.data))
       .catch(() => setError('Не вдалося завантажити відповіді'))
+
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attemptId])
+
+  async function setScore(questionId: string, score: number) {
+    try {
+      await api.patch(`/testing/analytics/attempts/${attemptId}/answers/${questionId}`, { score })
+      await load()
+      onChanged()
+    } catch (err) {
+      window.alert(getErrorMessage(err, 'Не вдалося змінити бали'))
+    }
+  }
 
   return (
     <Modal
@@ -107,6 +131,22 @@ function AnswersModal({ attemptId, onClose }: { attemptId: string; onClose: () =
                   {it.score}/{it.points}
                 </span>
               </div>
+              {can('testing.edit_results') && (
+                <label className="mt-1 flex items-center gap-2 text-xs text-muted">
+                  Бали вручну:
+                  <select
+                    value={it.score}
+                    onChange={(e) => setScore(it.questionId, Number(e.target.value))}
+                    className="rounded-lg border border-border bg-surface px-2 py-1 text-ink"
+                  >
+                    {Array.from({ length: it.points + 1 }, (_, n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <p className="mt-1 whitespace-pre-wrap text-sm">
                 <span className="text-muted">Відповідь: </span>
                 {it.userAnswer}
@@ -138,12 +178,26 @@ export default function UserResultsDrawer({
   const [error, setError] = useState('')
   const [answers, setAnswers] = useState<string | null>(null)
 
-  useEffect(() => {
+  const load = () =>
     api
       .get<UserResults>(`/testing/analytics/users/${userId}`)
       .then((r) => setData(r.data))
       .catch(() => setError('Не вдалося завантажити результати'))
+
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
+
+  async function removeAttempt(a: AttemptRow) {
+    if (!window.confirm(`Видалити спробу ${a.attemptNumber}? Результат зникне назавжди, а спроба знову стане доступною для проходження.`)) return
+    try {
+      await api.delete(`/testing/analytics/attempts/${a.id}`)
+      await load()
+    } catch (err) {
+      window.alert(getErrorMessage(err, 'Не вдалося видалити спробу'))
+    }
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !answers && onClose()
@@ -227,6 +281,14 @@ export default function UserResultsDrawer({
                         )}
                       </>
                     )}
+                    {can('testing.edit_results') && (
+                      <button
+                        onClick={() => removeAttempt(a)}
+                        className="text-danger hover:underline"
+                      >
+                        Видалити
+                      </button>
+                    )}
                   </div>
                 ))}
               </section>
@@ -234,7 +296,9 @@ export default function UserResultsDrawer({
           </div>
         </div>
       </div>
-      {answers && <AnswersModal attemptId={answers} onClose={() => setAnswers(null)} />}
+      {answers && (
+        <AnswersModal attemptId={answers} onClose={() => setAnswers(null)} onChanged={load} />
+      )}
     </>
   )
 }

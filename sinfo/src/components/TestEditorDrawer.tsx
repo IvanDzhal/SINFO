@@ -413,7 +413,7 @@ export default function TestEditorDrawer({
   }
 
   function remove() {
-    if (!window.confirm('Видалити чернетку тесту назавжди?')) return
+    if (!window.confirm('Перемістити тест у кошик? Його можна відновити протягом 30 днів, спроби й результати збережуться.')) return
     run(
       () => api.delete(`/testing/manage/tests/${id}`),
       () => {
@@ -756,7 +756,7 @@ export default function TestEditorDrawer({
             {message && <span className="text-sm text-success">{message}</span>}
             {error && <span className="text-sm text-danger">{error}</span>}
 
-            {id && status === 'draft' && can('testing.delete') && (
+            {id && can('testing.delete') && (
               <Button variant="ghost" onClick={remove} disabled={busy}>
                 <span className="text-danger">Видалити</span>
               </Button>
