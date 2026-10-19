@@ -69,7 +69,7 @@ export class PushService {
 
   private async deliver(userIds: string[], payload: PushPayload) {
     const subs = await this.prisma.pushSubscription.findMany({
-      where: { userId: { in: userIds } },
+      where: { userId: { in: userIds }, user: { status: 'active' } },
     });
     const body = JSON.stringify({
       title: payload.title,

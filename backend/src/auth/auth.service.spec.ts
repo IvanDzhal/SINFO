@@ -58,6 +58,14 @@ describe('AuthService', () => {
     expect(ok.accessToken).toBeTruthy();
   });
 
+  it('після зміни пароля старий refresh-токен перестає діяти', async () => {
+    const t = await svc.login('admin', 'Correct-Horse-1');
+    const before = user;
+    user = { ...user, passwordHash: await argon2.hash('Another-Pass-2') };
+    await expect(svc.refresh(t.refreshToken)).rejects.toBeInstanceOf(UnauthorizedException);
+    user = before;
+  });
+
   it('refresh-токен без typ (старий формат) відхиляється', async () => {
     const legacy = await jwt.signAsync({ sub: 'u1' }, { secret: R });
     await expect(svc.refresh(legacy)).rejects.toBeInstanceOf(UnauthorizedException);

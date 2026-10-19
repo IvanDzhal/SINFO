@@ -95,9 +95,11 @@ export class UsersService {
 
   async update(actorId: string, id: string, dto: UpdateUserDto) {
     await this.get(id);
+    // статус змінюється лише окремими діями «Деактивувати» / «Активувати» (власне право + захист від самоблокування)
+    const { status: _status, ...data } = dto;
     const user = await this.prisma.user.update({
       where: { id },
-      data: dto,
+      data,
       include: SAFE_INCLUDE,
     });
     await this.audit.log(actorId, 'user.updated', 'User', id, { ...dto });
