@@ -4,6 +4,7 @@ import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
 import { AttemptsService } from './attempts.service';
 import { AnswerDto } from './dto/answer.dto';
+import { slugKeyPipe } from '../common/slug-key';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('testing')
@@ -12,13 +13,13 @@ export class AttemptsController {
 
   @Permissions('testing.view')
   @Get('tests/:id')
-  detail(@Req() req: any, @Param('id') id: string) {
+  detail(@Req() req: any, @Param('id', slugKeyPipe('test')) id: string) {
     return this.service.detail(req.user, id);
   }
 
   @Permissions('testing.start')
   @Post('tests/:id/start')
-  start(@Req() req: any, @Param('id') id: string) {
+  start(@Req() req: any, @Param('id', slugKeyPipe('test')) id: string) {
     return this.service.start(req.user, id);
   }
 

@@ -41,6 +41,7 @@ interface SellerRow extends Stats {
 }
 interface MaterialRow {
   id: string
+  slug: string | null
   title: string
   isRequired: boolean
   audience: number
@@ -50,7 +51,7 @@ interface MaterialRow {
 }
 interface Unviewed {
   seller: SellerRow
-  unviewed: { id: string; title: string; isRequired: boolean }[]
+  unviewed: { id: string; slug: string | null; title: string; isRequired: boolean }[]
 }
 
 const WARN_BELOW = 50
@@ -153,7 +154,7 @@ function UnviewedPanel({ userId, onClose }: { userId: string; onClose: () => voi
         <ul className="space-y-1 text-sm">
           {data.unviewed.map((m) => (
             <li key={m.id}>
-              <Link to={`/knowledge/${m.id}`} className="text-accent hover:underline">
+              <Link to={`/knowledge/${m.slug ?? m.id}`} className="text-accent hover:underline">
                 {m.title}
               </Link>
               {m.isRequired && <span className="ml-2 text-xs text-danger">обов’язкова</span>}
@@ -333,7 +334,7 @@ function ContentSection() {
               header: 'Матеріал',
               cell: (r) => (
                 <div>
-                  <Link to={`/knowledge/${r.id}`} className="font-medium text-accent hover:underline">
+                  <Link to={`/knowledge/${r.slug ?? r.id}`} className="font-medium text-accent hover:underline">
                     {r.title}
                   </Link>
                   {r.isRequired && <span className="ml-2 text-xs text-danger">обов’язкова</span>}

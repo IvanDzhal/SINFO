@@ -81,9 +81,11 @@ export class AttemptsService {
     let blockedReason: string | null = null;
     if (!running) {
       if (!mayStart) blockedReason = 'У вас немає права проходити тести';
-      else if (myStatus === 'passed') blockedReason = 'Тест успішно пройдено';
-      else if (myStatus === 'failed') blockedReason = 'Усі спроби вичерпано';
-      else if (myStatus === 'overdue') blockedReason = 'Термін проходження минув';
+      else if (test.maxAttempts > 0 && attempts.length >= test.maxAttempts) {
+        blockedReason = 'Усі спроби вичерпано';
+      } else if (test.deadline && test.deadline <= new Date()) {
+        blockedReason = 'Термін проходження минув';
+      }
       else {
         const gate = await testGate(this.prisma, user.id, testId);
         if (gate && !gate.ok) blockedReason = gate.reason;
@@ -92,6 +94,7 @@ export class AttemptsService {
 
     return {
       id: test.id,
+      slug: test.slug,
       title: test.title,
       description: test.description,
       isRequired: test.isRequired,
@@ -130,7 +133,6 @@ export class AttemptsService {
     });
     const running = attempts.find((a) => a.status === 'in_progress');
     if (running) return { attemptId: running.id };
-    if (attempts.some((a) => a.passed)) throw new BadRequestException('Тест уже успішно пройдено');
     if (test.maxAttempts > 0 && attempts.length >= test.maxAttempts) {
       throw new BadRequestException('Усі спроби вичерпано');
     }
@@ -225,7 +227,7 @@ export class AttemptsService {
       state: 'in_progress' as const,
       attemptId: attempt.id,
       attemptNumber: attempt.attemptNumber,
-      test: { id: attempt.test.id, title: attempt.test.title },
+      test: { id: attempt.test.id, slug: attempt.test.slug, title: attempt.test.title },
       expiresAt: attempt.expiresAt,
       serverNow: new Date(),
       questions,
@@ -386,7 +388,7 @@ export class AttemptsService {
       where: { id: attemptId },
       include: {
         test: {
-          select: { id: true, title: true, passingScorePercent: true, maxAttempts: true },
+          select: { id: true, slug: true, title: true, passingScorePercent: true, maxAttempts: true },
         },
         answers: { select: { questionId: true, answer: true } },
       },

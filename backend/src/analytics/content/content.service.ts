@@ -30,7 +30,7 @@ type SellerRow = Stats & {
   store: string | null;
   city: string | null;
   lastActivityAt: Date | null;
-  unviewed: { id: string; title: string; isRequired: boolean }[];
+  unviewed: { id: string; slug: string | null; title: string; isRequired: boolean }[];
 };
 
 const percent = (viewed: number, total: number) =>
@@ -100,6 +100,7 @@ export class ContentAnalyticsService {
         where: { status: 'published', type: f.type ?? 'instruction' },
         select: {
           id: true,
+          slug: true,
           title: true,
           isRequired: true,
           visibility: { select: { kind: true, targetId: true } },
@@ -130,7 +131,7 @@ export class ContentAnalyticsService {
     // аудиторія кожного матеріалу — для зведення «які матеріали ігнорують»
     const materials = new Map<
       string,
-      { id: string; title: string; isRequired: boolean; audience: number; viewed: number }
+      { id: string; slug: string | null; title: string; isRequired: boolean; audience: number; viewed: number }
     >();
 
     for (const u of users) {
@@ -162,6 +163,7 @@ export class ContentAnalyticsService {
         const readAt = done?.get(item.id);
         const m = materials.get(item.id) ?? {
           id: item.id,
+          slug: item.slug,
           title: item.title,
           isRequired: item.isRequired,
           audience: 0,
@@ -177,7 +179,7 @@ export class ContentAnalyticsService {
           if (item.isRequired) row.requiredViewed += 1;
           if (!row.lastActivityAt || readAt > row.lastActivityAt) row.lastActivityAt = readAt;
         } else {
-          row.unviewed.push({ id: item.id, title: item.title, isRequired: item.isRequired });
+          row.unviewed.push({ id: item.id, slug: item.slug, title: item.title, isRequired: item.isRequired });
         }
         materials.set(item.id, m);
       }

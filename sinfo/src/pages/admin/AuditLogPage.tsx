@@ -1,6 +1,6 @@
 import DataTable from '@/components/DataTable'
 import { useFetch } from '@/hooks/useFetch'
-import { actionLabel } from '@/utils/auditLabels'
+import { actionLabel, entityLabel } from '@/utils/auditLabels'
 
 interface AuditRow {
   id: string
@@ -25,7 +25,7 @@ export default function AuditLogPage() {
           render: (r) => (r.actor ? `${r.actor.firstName} ${r.actor.lastName}` : 'Система'),
         },
         { header: 'Дія', render: (r) => actionLabel(r.action) },
-        { header: 'Об\'єкт', render: (r) => r.entityType },
+        { header: 'Об\'єкт', render: (r) => entityLabel(r.entityType) },
       ]}
     />
   )

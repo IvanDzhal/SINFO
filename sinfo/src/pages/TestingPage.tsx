@@ -17,6 +17,7 @@ interface Category {
 
 interface AvailableTest {
   id: string
+  slug: string | null
   title: string
   description: string
   isRequired: boolean
@@ -205,7 +206,7 @@ function AvailableSection() {
           return (
             <Link
               key={t.id}
-              to={`/testing/${t.id}`}
+              to={`/testing/${t.slug ?? t.id}`}
               className="flex flex-col rounded-2xl border border-border bg-surface p-5 hover:border-accent"
             >
               <div className="mb-2 flex flex-wrap items-center gap-2">

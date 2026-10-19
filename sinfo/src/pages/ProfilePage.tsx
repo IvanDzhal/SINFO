@@ -37,11 +37,12 @@ interface Profile {
     read: number
     total: number
     percent: number
-    last: { id: string; title: string; readAt: string } | null
+    last: { id: string; slug: string | null; title: string; readAt: string } | null
   } | null
   tests:
     | {
         testId: string
+        slug: string | null
         title: string
         percent: number
         passed: boolean
@@ -322,7 +323,7 @@ export default function ProfilePage() {
                   <li key={t.testId} className="flex items-start justify-between gap-3 text-sm">
                     <div className="min-w-0">
                       {data.isSelf ? (
-                        <Link to={`/testing/${t.testId}`} className="hover:text-accent">
+                        <Link to={`/testing/${t.slug ?? t.testId}`} className="hover:text-accent">
                           {t.title}
                         </Link>
                       ) : (
@@ -424,7 +425,7 @@ export default function ProfilePage() {
           {data.knowledge.last && (
             <p className="mt-3 text-sm text-muted">
               Остання:{' '}
-              <Link to={`/knowledge/${data.knowledge.last.id}`} className="text-ink hover:text-accent">
+              <Link to={`/knowledge/${data.knowledge.last.slug ?? data.knowledge.last.id}`} className="text-ink hover:text-accent">
                 «{data.knowledge.last.title}»
               </Link>
             </p>

@@ -185,14 +185,14 @@ export class ProfileService {
       this.prisma.knowledgeRead.findFirst({
         where: { userId: actor.id, item: base },
         orderBy: { readAt: 'desc' },
-        select: { readAt: true, item: { select: { id: true, title: true } } },
+        select: { readAt: true, item: { select: { id: true, slug: true, title: true } } },
       }),
     ]);
     return {
       read,
       total,
       percent: total > 0 ? Math.round((read / total) * 100) : 0,
-      last: last ? { id: last.item.id, title: last.item.title, readAt: last.readAt } : null,
+      last: last ? { id: last.item.id, slug: last.item.slug, title: last.item.title, readAt: last.readAt } : null,
     };
   }
 
@@ -206,13 +206,13 @@ export class ProfileService {
         testId: true,
         scorePercent: true,
         completedAt: true,
-        test: { select: { title: true, passingScorePercent: true } },
+        test: { select: { slug: true, title: true, passingScorePercent: true } },
       },
     });
 
     const byTest = new Map<
       string,
-      { testId: string; title: string; best: number; passingScorePercent: number; attempts: number; lastAt: Date | null }
+      { testId: string; slug: string | null; title: string; best: number; passingScorePercent: number; attempts: number; lastAt: Date | null }
     >();
     for (const r of rows) {
       const score = r.scorePercent as number;
@@ -220,6 +220,7 @@ export class ProfileService {
       if (!cur) {
         byTest.set(r.testId, {
           testId: r.testId,
+          slug: r.test.slug,
           title: r.test.title,
           best: score,
           passingScorePercent: r.test.passingScorePercent,
@@ -236,6 +237,7 @@ export class ProfileService {
     const average = all.length > 0 ? round1(all.reduce((s, t) => s + t.best, 0) / all.length) : null;
     const recent = all.slice(0, RECENT_TESTS_LIMIT).map((t) => ({
       testId: t.testId,
+      slug: t.slug,
       title: t.title,
       percent: Math.round(t.best),
       passed: t.best >= t.passingScorePercent,

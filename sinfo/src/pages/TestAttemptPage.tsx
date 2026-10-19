@@ -33,7 +33,7 @@ interface Completed {
   state: 'completed'
   attemptId: string
   attemptNumber: number
-  test: { id: string; title: string; passingScorePercent: number; maxAttempts: number }
+  test: { id: string; slug: string | null; title: string; passingScorePercent: number; maxAttempts: number }
   score: number | null
   maxScore: number
   scorePercent: number | null
@@ -63,7 +63,7 @@ function Result({ r }: { r: Completed }) {
   const percent = Math.floor(r.scorePercent ?? 0)
   const m = Math.floor(r.timeSpentSec / 60)
   const s = r.timeSpentSec % 60
-  const canRetry = !r.passed && (r.attemptsAllowed === 0 || r.attemptsUsed < r.attemptsAllowed)
+  const canRetry = (r.attemptsAllowed === 0 || r.attemptsUsed < r.attemptsAllowed)
 
   return (
     <div className="mx-auto max-w-xl">
@@ -102,7 +102,7 @@ function Result({ r }: { r: Completed }) {
 
         <div className="mt-5 flex flex-wrap justify-center gap-3">
           <Link
-            to={`/testing/${r.test.id}`}
+            to={`/testing/${r.test.slug ?? r.test.id}`}
             className="rounded-xl border border-border px-4 py-2 text-sm hover:bg-surface-2"
           >
             {canRetry ? 'До тесту (можна спробувати ще раз)' : 'До тесту'}

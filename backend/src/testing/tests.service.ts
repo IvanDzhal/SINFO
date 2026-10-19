@@ -1,3 +1,4 @@
+import { newSlug } from '../common/slug-key';
 import {
   BadRequestException,
   ForbiddenException,
@@ -36,6 +37,7 @@ export class TestsService {
       orderBy: [{ isRequired: 'desc' }, { createdAt: 'desc' }],
       select: {
         id: true,
+        slug: true,
         title: true,
         description: true,
         isRequired: true,
@@ -166,6 +168,7 @@ export class TestsService {
 
     const test = await this.prisma.test.create({
       data: {
+        slug: await newSlug(this.prisma, 'test', dto.title),
         title: dto.title.trim(),
         description: dto.description?.trim() ?? '',
         categoryId: dto.categoryId ?? undefined,
