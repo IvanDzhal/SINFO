@@ -150,13 +150,13 @@ export default function KnowledgeArticlePage() {
     <div>
       <Link
         to={backTo}
-        className="mb-3 inline-flex items-center gap-1 text-sm text-muted hover:text-ink"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-muted hover:text-ink print:hidden"
       >
         <ArrowLeft size={16} /> {backLabel}
       </Link>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
-        <article className="rounded-2xl border border-border bg-surface p-5 sm:p-8">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_280px] print:block">
+        <article className="rounded-2xl border border-border bg-surface p-5 sm:p-8 print:rounded-none print:border-0 print:p-0">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             {categoryName && (
               <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted">
@@ -183,10 +183,11 @@ export default function KnowledgeArticlePage() {
             <div className="flex gap-2 print:hidden">
               <button
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm hover:bg-surface-2"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-2.5 py-1.5 text-sm hover:bg-surface-2 sm:px-3"
                 title="Зберегти як PDF або надрукувати"
+                aria-label="PDF"
               >
-                <Printer size={14} /> PDF
+                <Printer size={14} /> <span className="hidden sm:inline">PDF</span>
               </button>
               {article.canManage && can('knowledge.edit') && article.status === 'published' && (
                 <button
@@ -199,26 +200,32 @@ export default function KnowledgeArticlePage() {
                       window.alert(getErrorMessage(err, 'Не вдалося змінити закріплення'))
                     }
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm hover:bg-surface-2"
+                  title={article.pinnedAt ? 'Відкріпити' : 'Закріпити'}
+                  aria-label={article.pinnedAt ? 'Відкріпити' : 'Закріпити'}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-2.5 py-1.5 text-sm hover:bg-surface-2 sm:px-3"
                 >
                   {article.pinnedAt ? <PinOff size={14} /> : <Pin size={14} />}
-                  {article.pinnedAt ? 'Відкріпити' : 'Закріпити'}
+                  <span className="hidden sm:inline">{article.pinnedAt ? 'Відкріпити' : 'Закріпити'}</span>
                 </button>
               )}
               {article.canManage && (
                 <Link
                   to={`/knowledge/${article.slug ?? article.id}/edit`}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm hover:bg-surface-2"
+                  title="Редагувати"
+                  aria-label="Редагувати"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-2.5 py-1.5 text-sm hover:bg-surface-2 sm:px-3"
                 >
-                  <Pencil size={14} /> Редагувати
+                  <Pencil size={14} /> <span className="hidden sm:inline">Редагувати</span>
                 </Link>
               )}
               {can('knowledge.view_versions') && (
                 <button
                   onClick={() => setShowVersions(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm hover:bg-surface-2"
+                  title="Версії"
+                  aria-label="Версії"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-2.5 py-1.5 text-sm hover:bg-surface-2 sm:px-3"
                 >
-                  <History size={14} /> Версії
+                  <History size={14} /> <span className="hidden sm:inline">Версії</span>
                 </button>
               )}
             </div>

@@ -11,6 +11,8 @@ async function bootstrap() {
   // за ланцюгом reverse proxy (nginx → caddy → backend): довіряємо приватним мережам,
   // тож req.ip = перша публічна адреса в X-Forwarded-For (справжній клієнт, потрібен throttler)
   app.set('trust proxy', 'loopback, linklocal, uniquelocal');
+  // стандартний ліміт Express (100 КБ) замалий для великих статей; файли йдуть окремо, через multipart
+  app.useBodyParser('json', { limit: '10mb' });
   app.enableShutdownHooks();
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.setGlobalPrefix('api');

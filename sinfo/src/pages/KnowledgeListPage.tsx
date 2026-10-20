@@ -132,6 +132,9 @@ export default function KnowledgeListPage({ type }: { type: ItemType }) {
     if (category !== 'all') list = list.filter((i) => rootId(i) === category)
     if (category !== 'all' && sub) list = list.filter((i) => i.category?.id === sub)
     return [...list].sort((a, b) => {
+      // закріплені завжди вгорі (нові закріплені першими), решта за вибраним сортуванням
+      if (!!a.pinnedAt !== !!b.pinnedAt) return a.pinnedAt ? -1 : 1
+      if (a.pinnedAt && b.pinnedAt) return b.pinnedAt.localeCompare(a.pinnedAt)
       if (sort === 'title') return a.title.localeCompare(b.title, 'uk')
       const diff = new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       return sort === 'old' ? -diff : diff

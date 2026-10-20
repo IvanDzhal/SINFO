@@ -334,7 +334,7 @@ export default function TestAttemptPage() {
             {q.left?.map((l) => {
               const map = (answers[q.id] as Record<string, string> | undefined) ?? {}
               return (
-                <div key={l.id} className="grid gap-2 sm:grid-cols-2 sm:items-center">
+                <div key={l.id} className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:items-center">
                   <p className="text-sm">{l.label}</p>
                   <select
                     className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm text-ink outline-none focus:border-accent"

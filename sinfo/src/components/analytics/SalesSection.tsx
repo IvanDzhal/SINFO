@@ -350,7 +350,7 @@ function ChartsPanel({
   }))
 
   return (
-    <div className="mb-6 grid gap-4 lg:grid-cols-2">
+    <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
       <ChartCard
         title="Виконання плану по магазинах"
         hint="Риска — прогноз на кінець місяця, лінія — 100% плану. Натисніть на магазин."

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   Param,
@@ -37,6 +38,12 @@ export class FilesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('links')
+  links(@Req() req: any, @Body('ids') ids: unknown) {
+    return this.service.links(req.user, Array.isArray(ids) ? ids.filter((x) => typeof x === 'string') : []);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post(':id/link')
   link(@Req() req: any, @Param('id') id: string) {
     return this.service.link(req.user, id);
@@ -68,7 +75,7 @@ export class FilesController {
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('Content-Length', String(file.size));
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.setHeader('Cache-Control', 'private, max-age=3600');
     res.setHeader(
       'Content-Disposition',
       `${disposition}; filename*=UTF-8''${encodeName(file.originalName)}`,

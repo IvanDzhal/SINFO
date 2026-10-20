@@ -39,7 +39,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen bg-bg text-ink lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+    <div className="grid min-h-screen grid-cols-1 bg-bg text-ink lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       {/* Брендова панель (лише на широких екранах) */}
       <aside className="relative hidden overflow-hidden border-r border-border bg-surface lg:flex lg:flex-col lg:justify-between lg:p-12">
         <svg

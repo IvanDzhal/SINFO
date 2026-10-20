@@ -322,7 +322,7 @@ export default function KnowledgeEditPage() {
         </p>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="rounded-2xl border border-border bg-surface p-4 sm:p-6">
           <input
             className="mb-3 w-full bg-transparent text-2xl font-semibold text-ink outline-none placeholder:text-muted"

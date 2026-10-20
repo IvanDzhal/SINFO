@@ -312,7 +312,7 @@ export default function ProfilePage() {
         <Kpi label={`Днів активності за ${data.kpi.activeDaysWindow} дн.`} value={String(data.kpi.activeDays)} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {data.tests && (
           <Card title="Останні тести" icon={<ClipboardCheck size={16} className="text-accent" />}>
             {data.tests.length === 0 ? (

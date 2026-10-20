@@ -68,7 +68,7 @@ export default function MaintenancePage() {
       </div>
 
       <div className="rounded-2xl border border-border bg-surface p-4">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="text-sm">
             Початок
             <input type="datetime-local" className={input} value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
