@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useCreateBlockNote } from '@blocknote/react'
 import { BlockNoteView } from '@blocknote/mantine'
 import '@blocknote/core/fonts/inter.css'
 import '@blocknote/mantine/style.css'
-import { resolveFileUrl } from '@/utils/fileUrl'
+import { prefetchFileUrls, resolveFileUrl } from '@/utils/fileUrl'
 import { richSchema } from './richSchema'
 
 function Lightbox({
@@ -111,6 +111,8 @@ export default function RichContent({
   content: unknown
   theme: 'light' | 'dark'
 }) {
+  // посилання на всі фото статті запитуємо одним запитом ще до створення редактора
+  useMemo(() => prefetchFileUrls(content), [content])
   const editor = useCreateBlockNote({
     schema: richSchema,
     initialContent:

@@ -169,7 +169,7 @@ const can = useCan()
         </nav>
       </aside>
 
-      <div className="lg:pl-64">
+      <div className="min-w-0 lg:pl-64">
         <MaintenanceBanner />
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-bg px-4 py-3 lg:px-6">
           <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Відкрити меню">
@@ -203,7 +203,7 @@ const can = useCan()
             </button>
           </div>
         </header>
-        <main className="p-4 lg:p-6">
+        <main className="min-w-0 p-4 lg:p-6">
           <Outlet />
         </main>
       </div>

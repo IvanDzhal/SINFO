@@ -4,7 +4,8 @@ import * as locales from '@blocknote/core/locales'
 import '@blocknote/core/fonts/inter.css'
 import '@blocknote/mantine/style.css'
 import { getSlashItems, richSchema } from './richSchema'
-import { resolveFileUrl, uploadFile } from '@/utils/fileUrl'
+import { useMemo } from 'react'
+import { prefetchFileUrls, resolveFileUrl, uploadFile } from '@/utils/fileUrl'
 
 export default function RichEditor({
   initialContent,
@@ -19,6 +20,7 @@ export default function RichEditor({
   allowUpload?: boolean
   onChange: (blocks: unknown) => void
 }) {
+  useMemo(() => prefetchFileUrls(initialContent), [initialContent])
   const editor = useCreateBlockNote({
     schema: richSchema,
     initialContent:

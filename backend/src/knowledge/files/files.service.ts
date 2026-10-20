@@ -17,6 +17,12 @@ export class FilesService {
     private items: ItemsService,
   ) {}
 
+  // Термін дії округлюється до години: посилання на файл не змінюється впродовж години,
+  // тож браузер кешує фото й не качає його заново при кожному відкритті статті
+  private expiry() {
+    return (Math.floor(Date.now() / LINK_TTL_MS) + 2) * LINK_TTL_MS;
+  }
+
   private sign(id: string, exp: number) {
     return createHmac('sha256', signingSecret())
       .update(`file:${id}:${exp}`)
@@ -64,13 +70,37 @@ export class FilesService {
       : file.uploadedById === user.id;
     if (!allowed) throw new ForbiddenException('Немає доступу до файлу');
 
-    const exp = Date.now() + LINK_TTL_MS;
+    const exp = this.expiry();
     return { url: `/knowledge/files/${id}/raw?exp=${exp}&sig=${this.sign(id, exp)}` };
+  }
+
+  // Посилання одразу на всі файли статті (один запит замість окремого на кожне фото)
+  async links(user: Actor, ids: string[]) {
+    const unique = [...new Set(ids)].filter((x) => /^[0-9a-f-]{36}$/.test(x)).slice(0, 100);
+    const files = await this.prisma.knowledgeFile.findMany({
+      where: { id: { in: unique } },
+      select: { id: true, itemId: true, uploadedById: true },
+    });
+    const access = new Map<string, boolean>();
+    const urls: Record<string, string> = {};
+    for (const f of files) {
+      let ok: boolean;
+      if (f.itemId) {
+        if (!access.has(f.itemId)) access.set(f.itemId, await this.items.canAccess(user, f.itemId));
+        ok = access.get(f.itemId) as boolean;
+      } else {
+        ok = f.uploadedById === user.id;
+      }
+      if (!ok) continue;
+      const exp = this.expiry();
+      urls[f.id] = `/knowledge/files/${f.id}/raw?exp=${exp}&sig=${this.sign(f.id, exp)}`;
+    }
+    return { urls };
   }
 
   // Підписане посилання без перевірки доступу: викликати лише після власної перевірки прав
   rawUrl(id: string, inline = false) {
-    const exp = Date.now() + LINK_TTL_MS;
+    const exp = this.expiry();
     return `/knowledge/files/${id}/raw?exp=${exp}&sig=${this.sign(id, exp)}${inline ? '&inline=1' : ''}`;
   }
 

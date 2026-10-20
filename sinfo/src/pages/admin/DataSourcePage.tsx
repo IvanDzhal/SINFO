@@ -324,7 +324,7 @@ export default function DataSourcePage() {
 
       <section className="mb-6 rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-3 font-medium">Підключення</h3>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <label className="block text-sm">
             <span className="mb-1 block font-medium">Посилання або ID таблиці</span>
             <input

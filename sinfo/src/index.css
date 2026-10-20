@@ -84,9 +84,42 @@ body {
   main {
     padding: 0 !important;
   }
+  /* flex/grid-контейнери браузер не розриває між сторінками: без цього перша сторінка порожня,
+     а стаття переноситься на другу */
+  .min-h-screen {
+    display: block !important;
+    min-height: 0 !important;
+  }
   .lg\:pl-64,
   .lg\:ml-64 {
     padding-left: 0 !important;
     margin-left: 0 !important;
   }
+}
+
+/* На вузьких екранах вміст статті (таблиці, код, картинки) не розширює сторінку: довгі рядки
+   переносяться, широкі таблиці прокручуються всередині блока */
+/* clip, а не hidden: не створює контейнер прокрутки і не ламає липку шапку */
+html,
+body {
+  overflow-x: clip;
+}
+.rich-content {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.rich-content .bn-container,
+.rich-content .bn-editor {
+  max-width: 100%;
+}
+.rich-content img,
+.rich-content video {
+  max-width: 100%;
+  height: auto;
+}
+.rich-content table,
+.rich-content pre {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
 }

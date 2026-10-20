@@ -143,6 +143,7 @@ export class ManageService {
         slug,
       },
     });
+    await this.linkFiles(item.id, incoming);
     await this.audit.log(user.id, 'knowledge_item.created', 'KnowledgeItem', item.id, {
       title: item.title,
       type: item.type,
@@ -177,7 +178,7 @@ export class ManageService {
     if (rules) data.visibility = { deleteMany: {}, create: rules };
 
     const updated = await this.prisma.knowledgeItem.update({ where: { id }, data });
-    if (contentChanged) await this.linkFiles(id, incoming, user.id);
+    if (contentChanged) await this.linkFiles(id, incoming);
     if (bump) await this.snapshot(updated, user.id);
 
     await this.audit.log(user.id, 'knowledge_item.updated', 'KnowledgeItem', id, {
@@ -377,14 +378,16 @@ export class ManageService {
     return [];
   }
 
-  private async linkFiles(itemId: string, content: unknown, uploaderId: string) {
+  // Файли зі вмісту стають файлами статті: лише так їх бачать інші читачі.
+  // Прив'язуємо незалежно від того, хто завантажив (статтю може редагувати інший користувач).
+  private async linkFiles(itemId: string, content: unknown) {
     if (content === undefined || content === null) return;
     const ids = [...JSON.stringify(content).matchAll(/sinfo:\/\/file\/([0-9a-f-]{36})/g)].map(
       (m) => m[1],
     );
     if (ids.length === 0) return;
     await this.prisma.knowledgeFile.updateMany({
-      where: { id: { in: [...new Set(ids)] }, itemId: null, uploadedById: uploaderId },
+      where: { id: { in: [...new Set(ids)] }, itemId: null },
       data: { itemId },
     });
   }

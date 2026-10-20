@@ -112,7 +112,7 @@ export default function UserLayout() {
         )}
         </aside>
 
-      <div className="flex min-h-screen flex-col lg:pl-64">
+      <div className="flex min-h-screen min-w-0 flex-col lg:pl-64">
         <MaintenanceBanner />
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-bg px-4 py-3 lg:px-6">
           <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Відкрити меню">
@@ -147,7 +147,7 @@ export default function UserLayout() {
             </button>
           </div>
         </header>
-        <main className="flex-1 p-4 lg:p-6">
+        <main className="min-w-0 flex-1 p-4 lg:p-6">
           <Outlet />
         </main>
         <Footer />
